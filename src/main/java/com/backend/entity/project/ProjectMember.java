@@ -2,7 +2,15 @@ package com.backend.entity.project;
 
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
+import lombok.*;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+@Getter
+@Builder
+@Entity
+@Table(name = "project_member")
 public class ProjectMember { //프로젝트별 멤버 권한
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

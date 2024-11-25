@@ -1,12 +1,17 @@
 package com.backend.entity.project;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.List;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+@Getter
+@Builder
+@Entity
+@Table(name = "project_column")
 public class ProjectColumn {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

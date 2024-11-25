@@ -1,10 +1,19 @@
 package com.backend.entity.project;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+@Getter
+@Builder
+@Entity
+@Table(name = "project_task")
 public class ProjectTask {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +36,7 @@ public class ProjectTask {
 
     @OneToMany
     private List<ProjectComment> comments;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TaskTag> taskTags = new ArrayList<>();
 }
