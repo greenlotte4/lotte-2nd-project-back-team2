@@ -7,7 +7,9 @@ import com.backend.dto.response.UserDto;
 import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
 import com.backend.service.UserService;
-import com.backend.util.JwtTokenProvider;
+import com.backend.util.jwt.JwtTokenProvider;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -23,36 +25,7 @@ import java.util.*;
 @Log4j2
 public class UserController {
 
-    private final JwtTokenProvider tokenProvider;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final UserService userService;
-
-    @PostMapping("/user/login")
-    public ResponseEntity<?> login(
-            @RequestBody LoginDto dto
-    ){
-        Optional<User> user = userRepository.findByUid(dto.getUid());
-        if(user.isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-
-        if(passwordEncoder.matches(dto.getPwd(), user.get().getPwd())){
-
-            UserDto userDto = user.get().toSliceDto();
-            log.info("userDTO!!!!:" +userDto);
-
-            String jwts = tokenProvider.createToken(dto.getUid(),user.get().getRole().toString());
-            Map<String, Object> response = new HashMap<>();
-            response.put("token",jwts);
-            response.put("role",user.get().getRole());
-            response.put("user",user.get().toSliceDto());
-            return ResponseEntity.ok().body(response);
-        }
-
-        return ResponseEntity.ok().build();
-    }
-
 
     @GetMapping("/users")
     public ResponseEntity<?> getUser(){
