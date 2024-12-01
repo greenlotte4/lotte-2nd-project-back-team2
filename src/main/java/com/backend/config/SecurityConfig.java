@@ -1,16 +1,22 @@
 package com.backend.config;
 
+import com.backend.util.jwt.JwtTokenProvider;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -21,9 +27,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
+import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig implements WebMvcConfigurer {
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -32,7 +41,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .configurationSource(corsConfigurationSource())
                 )
                 .csrf(CsrfConfigurer::disable)
-                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -63,18 +72,27 @@ public class SecurityConfig implements WebMvcConfigurer {
         return new BCryptPasswordEncoder();
     }
 
+    @RequiredArgsConstructor
     public static class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+        private final JwtTokenProvider jwtTokenProvider;
+
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                throws ServletException, IOException {
             String token = extractTokenFromHeader(request);
 
-            if (token != null && !token.isEmpty()) {
-                try {
+            try {
+                if (token != null && jwtTokenProvider.validateToken(token)) {
+                    if (jwtTokenProvider.isTokenExpired(token)) {
+                        throw new IllegalArgumentException("Token has expired");
+                    }
                     authenticateWithToken(token);
-                } catch (Exception e) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
-                    return;
                 }
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext(); // Clear context on failure
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                return;
             }
 
             filterChain.doFilter(request, response);
@@ -82,13 +100,18 @@ public class SecurityConfig implements WebMvcConfigurer {
 
         private String extractTokenFromHeader(HttpServletRequest request) {
             String header = request.getHeader("Authorization");
-            if (header != null && header.startsWith("Bearer ")) {
-                return header.substring(7);
-            }
-            return null;
+            return (header != null && header.startsWith("Bearer ")) ? header.substring(7) : null;
         }
 
         private void authenticateWithToken(String token) {
+            Claims claims = jwtTokenProvider.getClaims(token);
+            String username = claims.getSubject();
+            String role = claims.get("role", String.class);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(username, null, List.of(new SimpleGrantedAuthority(role)));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
     }
 

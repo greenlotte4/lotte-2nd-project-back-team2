@@ -6,6 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Date;
 
@@ -36,6 +37,8 @@ public class JwtTokenProvider {
         }else{
             expireDate = new Date(now.getTime() + Duration.ofDays(7).toMillis());
             return Jwts.builder()
+                    .setSubject(username)
+                    .setIssuedAt(now)
                     .setExpiration(expireDate)
                     .signWith(SignatureAlgorithm.HS256, secret)
                     .compact();
@@ -44,7 +47,7 @@ public class JwtTokenProvider {
 
     public Claims getClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(secret)
+                .setSigningKey(secret.getBytes(StandardCharsets.UTF_8))
                 .parseClaimsJws(token)
                 .getBody();
     }
