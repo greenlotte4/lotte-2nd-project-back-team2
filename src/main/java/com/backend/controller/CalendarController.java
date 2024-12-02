@@ -1,11 +1,9 @@
 package com.backend.controller;
 
-import com.backend.dto.request.calendar.PostCalendarContentDto;
-import com.backend.dto.request.calendar.PostCalendarDto;
-import com.backend.dto.request.calendar.PutCalendarContentDto;
-import com.backend.dto.request.calendar.PutCalendarContentsDto;
+import com.backend.dto.request.calendar.*;
 import com.backend.service.CalendarService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -101,6 +99,30 @@ public class CalendarController {
             ){
 
         ResponseEntity<?> response = calendarService.postCalendar(dto);
+        return response;
+    }
+
+    @GetMapping("/calendar/users")
+    public ResponseEntity<?> getCalendarUsers (
+            @RequestParam Long id
+    ){
+        ResponseEntity<?> response = calendarService.getCalendarByGroup(id);
+        return response;
+    }
+
+    @PutMapping("/calendar")
+    public ResponseEntity<?> putCalendar (
+            @RequestBody PutCalendarDto dtos
+            ){
+        ResponseEntity<?> response = calendarService.putCalendar(dtos);
+        return response;
+    }
+
+    @DeleteMapping("/calendar")
+    public ResponseEntity<?> deleteCalendar (
+            @RequestParam Long id
+    ) {
+        ResponseEntity<?> response = calendarService.deleteCalendar(id);
         return response;
     }
 }

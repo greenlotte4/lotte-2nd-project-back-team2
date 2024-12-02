@@ -1,12 +1,10 @@
 package com.backend.service;
 
-import com.backend.dto.request.calendar.PostCalendarContentDto;
-import com.backend.dto.request.calendar.PostCalendarDto;
-import com.backend.dto.request.calendar.PutCalendarContentDto;
-import com.backend.dto.request.calendar.PutCalendarContentsDto;
+import com.backend.dto.request.calendar.*;
 import com.backend.dto.response.calendar.GetCalendarContentNameDto;
 import com.backend.dto.response.calendar.GetCalendarNameDto;
 import com.backend.dto.response.calendar.GetCalendarsDto;
+import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarContent;
 import com.backend.entity.calendar.CalendarMapper;
@@ -268,8 +266,6 @@ public class CalendarService {
             contents.addAll(smallContents);  // 필터링된 결과를 contents에 추가
         }
         List<GetCalendarContentNameDto> dtos = contents.stream().map(CalendarContent::toGetCalendarContentNameDto).toList();
-        System.out.println("=====================----");
-        System.out.println(dtos);
         return ResponseEntity.ok(dtos);
     }
 
@@ -343,5 +339,89 @@ public class CalendarService {
         map.put("message","캘린더 등록이 완료되었습니다.");
         map.put("calendarName",nameDto);
         return ResponseEntity.ok(map);
+    }
+
+    public ResponseEntity<?> getCalendarByGroup(Long id) {
+        Long userId = 9L;
+        Optional<User> user = userRepository.findById(userId);
+        if(user.isEmpty()){
+            return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다.");
+        }
+        Optional<Calendar> calendar = calendarRepository.findByCalendarId(id);
+        if(calendar.isEmpty()){
+            return ResponseEntity.badRequest().body("캘린더 정보가 일치하지않습니다.");
+        }
+        List<CalendarMapper> mappers = calendarMapperRepository.findAllByCalendar(calendar.get());
+        if(mappers.isEmpty()){
+            return ResponseEntity.badRequest().body("캘린더 정보가 일치하지않습니다.");
+        }
+        List<GetUsersAllDto> dtos = new ArrayList<>();
+        for (CalendarMapper mapper : mappers) {
+            GetUsersAllDto mapperUser = mapper.getUser().toGetUsersAllDto();
+            dtos.add(mapperUser);
+        }
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    public ResponseEntity<?> putCalendar(PutCalendarDto dtos) {
+        Long myId = 9L;
+        if(dtos.getStatus()==1){
+            Optional<User> user = userRepository.findById(myId);
+            if(user.isEmpty()){
+                return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다...");
+            }
+            Optional<CalendarMapper> mapper = calendarMapperRepository.findByUserAndCalendar_Status(user.get(),1);
+            mapper.ifPresent(calendarMapper -> calendarMapper.getCalendar().patchStatus(2));
+        }
+
+        Optional<Calendar> optCalendar = calendarRepository.findByCalendarId(dtos.getId());
+        if(optCalendar.isEmpty()){
+            return ResponseEntity.badRequest().body("캘린더 정보가 일치하지않습니다...");
+        }
+        optCalendar.get().putCalendar(dtos);
+
+        List<CalendarMapper> mappers = calendarMapperRepository.findAllByCalendar(optCalendar.get());
+
+        if(mappers.isEmpty()){
+            return ResponseEntity.badRequest().body("캘린더에 공유인원이 없습니다...");
+        }
+
+        calendarMapperRepository.deleteAll(mappers);
+
+        List<Long> ids = dtos.getUsers().stream().map(GetUsersAllDto::getId).toList();
+        for (Long id : ids) {
+            Optional<User> user = userRepository.findById(id);
+            if(user.isEmpty()){
+                return ResponseEntity.badRequest().body("유저정보가 일치하지 않습니다.");
+            }
+            CalendarMapper mapper = CalendarMapper.builder()
+                    .user(user.get())
+                    .calendar(optCalendar.get())
+                    .build();
+
+            calendarMapperRepository.save(mapper);
+        }
+
+        return ResponseEntity.ok("캘린더 수정이 완료되었습니다.");
+    }
+
+    public ResponseEntity<?> deleteCalendar(Long id) {
+        Optional<Calendar> calendar = calendarRepository.findById(id);
+        if(calendar.isEmpty()){
+            return ResponseEntity.badRequest().body("캘린더 정보가 일치하지않습니다...");
+        }
+        calendar.get().patchStatus(0);
+
+        List<CalendarMapper> mappers = calendarMapperRepository.findAllByCalendar(calendar.get());
+        if(mappers.isEmpty()){
+            return ResponseEntity.ok("캘린더 공유인원이 없습니다...");
+        }
+        calendarMapperRepository.deleteAll(mappers);
+
+        List<CalendarContent> contents = calendarContentRepository.findAllByCalendarAndCalendar_StatusIsNot(calendar.get(),0);
+        calendarContentRepository.deleteAll(contents);
+
+        return ResponseEntity.ok("캘린더 삭제가 완료되었습니다.");
     }
 }

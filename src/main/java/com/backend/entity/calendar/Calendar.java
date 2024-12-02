@@ -1,5 +1,6 @@
 package com.backend.entity.calendar;
 
+import com.backend.dto.request.calendar.PutCalendarDto;
 import com.backend.dto.response.calendar.GetCalendarContentNameDto;
 import com.backend.dto.response.calendar.GetCalendarNameDto;
 import com.backend.entity.user.User;
@@ -50,5 +51,11 @@ public class Calendar {
 
     public void patchStatus(int i) {
         this.status = i;
+    }
+
+    public void putCalendar(PutCalendarDto dtos) {
+        this.status = dtos.getStatus();
+        this.color = dtos.getColor();
+        this.name = dtos.getName();
     }
 }

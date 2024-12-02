@@ -1,5 +1,6 @@
 package com.backend.repository.calendar;
 
+import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,8 @@ public interface CalendarMapperRepository extends JpaRepository<CalendarMapper,L
     List<CalendarMapper> findAllByUserAndCalendar_StatusIsNot(User user, int i);
 
     Optional<CalendarMapper> findByUserAndCalendar_Status(User user, int i);
+
+    List<CalendarMapper> findAllByUserAndCalendar(User user, Calendar calendar);
+
+    List<CalendarMapper> findAllByCalendar(Calendar calendar);
 }

@@ -13,4 +13,6 @@ import java.util.Optional;
 @Repository
 public interface CalendarContentRepository extends JpaRepository<CalendarContent, Long> {
     Optional<CalendarContent> findByCalendarContentId(Long contentId);
+
+    List<CalendarContent> findAllByCalendarAndCalendar_StatusIsNot(Calendar calendar, int i);
 }
