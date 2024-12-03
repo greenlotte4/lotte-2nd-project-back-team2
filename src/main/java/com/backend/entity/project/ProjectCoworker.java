@@ -3,6 +3,7 @@ package com.backend.entity.project;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.PersistenceCreator;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -11,7 +12,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "project_member")
-public class ProjectMember { //프로젝트별 멤버 권한
+public class ProjectCoworker { //프로젝트별 멤버 권한
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,6 +32,7 @@ public class ProjectMember { //프로젝트별 멤버 권한
     private boolean canDeleteTask; // 삭제 권한
     private boolean canEditProject; // 프로젝트 전체 권한
 
+    @PrePersist
     private void setBasicPermit(){
         if (isOwner){
             canRead = true;

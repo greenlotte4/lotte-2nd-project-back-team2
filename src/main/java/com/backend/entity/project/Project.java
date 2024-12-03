@@ -22,7 +22,7 @@ public class Project { //프로젝트
     private int status; // 대기중, 진행중, 완료, 삭제
 
     @OneToMany(fetch = FetchType.LAZY)
-    private List<ProjectMember> members;
+    private List<ProjectCoworker> coworkers;
 
     @OneToMany
     private List<ProjectColumn> columns;
