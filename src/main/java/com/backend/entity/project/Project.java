@@ -1,5 +1,6 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.project.GetProjectListDTO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -35,5 +36,14 @@ public class Project { //프로젝트
         coworker.setProject(this);
     }
 
+    public GetProjectDTO toGetProjectDTO() {
+        return GetProjectDTO.builder()
+                .title(title)
+                .type(type)
+                .status(status)
+                .columns(columns.stream().map(ProjectColumn::toGetProjectColumnDTO).toList())
+                .coworkers(coworkers.stream().map(ProjectCoworker::toGetCoworkerDTO).toList())
+                .build();
+    }
 
 }

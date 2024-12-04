@@ -2,6 +2,7 @@ package com.backend.controller;
 
 import com.backend.dto.request.calendar.PostCalendarDto;
 import com.backend.dto.request.calendar.PutCalendarContentsDto;
+import com.backend.dto.request.calendar.PutContentMessageDto;
 import com.backend.dto.response.calendar.GetCalendarNameDto;
 import com.backend.dto.response.calendar.GetCalendarsDto;
 import com.backend.dto.response.calendar.GetMessagePostCalendarDto;
@@ -47,13 +48,14 @@ public class WebSocketController {
         Map<String, Object> map = new HashMap<>();
         List<GetCalendarsDto> dtos = contents.stream().map(CalendarContent::toGetCalendarsDto).toList();
         map.put("update", dtos);
-
-        Optional<Calendar> calendar = calendarRepository.findByCalendarId(Long.parseLong(calendarId));
+        System.out.println("sadkfljsakfjkdjsfalksajfaskdf");
+        Optional<Calendar> calendar = calendarRepository.findByCalendarIdAndCalendarContents_StatusIsNot(Long.parseLong(calendarId),0);
         if(calendar.isPresent()) {
             GetCalendarNameDto dto = calendar.get().toGetCalendarNameDto();
             map.put("name", dto);
         }
-
+        System.out.println("sadkfljsakfjkdjsfalksajfaskdf");
+        System.out.println(map);
         messagingTemplate.convertAndSend( "/topic/calendar/"+calendarId, map);
     }
 
@@ -80,8 +82,10 @@ public class WebSocketController {
                 .color(messageMap.getColor())
                 .name(messageMap.getName())
                 .status(messageMap.getStatus())
+                .id(messageMap.getId())
                 .build();
         map.put("post",dto);
+        map.put("myid",messageMap.getMyid());
         for (Long userId : userIds) {
             messagingTemplate.convertAndSend("/topic/calendar/user/"+userId, map);
         }
@@ -97,6 +101,34 @@ public class WebSocketController {
         Map<String, Object> map = new HashMap<>();
         map.put("contentsPut",messageMap);
         messagingTemplate.convertAndSend("/topic/calendar/"+calendarId, map);
+    }
+
+    @MessageMapping("/calendar/contents/put2")
+    public void putCalendarContents2(@Payload String message) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        PutContentMessageDto messageMap = objectMapper.readValue(message, PutContentMessageDto.class);
+        Map<String,Object> map = new HashMap<>();
+        map.put("put2","put2");
+        messagingTemplate.convertAndSend("/topic/calendar/"+messageMap.getCalendarId(), map);
+        messagingTemplate.convertAndSend("/topic/calendar/"+messageMap.getPrevId(), map);
+    }
+
+    @MessageMapping("/calendar/contents/delete")
+    public void deleteCalendarContents(@Payload String message) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        PutContentMessageDto messageMap = objectMapper.readValue(message, PutContentMessageDto.class);
+        Map<String,Object> map = new HashMap<>();
+        map.put("contentDelete","delete");
+        messagingTemplate.convertAndSend("/topic/calendar/"+messageMap.getCalendarId(), map);
+    }
+
+    @MessageMapping("/calendar/contents/post")
+    public void postCalendarContents(@Payload String message) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        PutContentMessageDto messageMap = objectMapper.readValue(message, PutContentMessageDto.class);
+        Map<String,Object> map = new HashMap<>();
+        map.put("contentPost","post");
+        messagingTemplate.convertAndSend("/topic/calendar/"+messageMap.getCalendarId(), map);
     }
 
     // 특정 사용자가 캘린더를 구독

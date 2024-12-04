@@ -1,5 +1,6 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectCoworkerDTO;
 import com.backend.dto.response.project.GetProjectListDTO;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
@@ -58,6 +59,29 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
                 .id(project.getId())
                 .title(project.getTitle())
                 .isOwner(isOwner)
+                .build();
+    }
+
+    public GetProjectCoworkerDTO toGetCoworkerDTO() {
+
+        String group;
+        if(!user.getGroupMappers().isEmpty()){
+            group = user.getGroupMappers().get(0).getGroup().getName();
+        } else {
+            group = "소속없음";
+        }
+        return GetProjectCoworkerDTO.builder()
+                .id(user.getId())
+                .uid(user.getUid())
+                .name(user.getName())
+                .email(user.getEmail())
+                .group(group)
+                .level(user.selectLevelString())
+                .canRead(canRead)
+                .canAddTask(canAddTask)
+                .canUpdateTask(canUpdateTask)
+                .canDeleteTask(canDeleteTask)
+                .canEditProject(canEditProject)
                 .build();
     }
 }

@@ -13,29 +13,30 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ChatMembersDTO {
+public class ChatMemberDTO {
 
     @Id
+    private String id;
     private String uid;
-    private String username;
+    private String name;
     private String email;
     private String hp;
     private Integer level;
     private String group;
     private String profileUrl;
-    private List<ChatMembersDTO> frequent_members;
+    private List<ChatMemberDTO> frequent_members = new ArrayList<>();
     private List<String> roomIds = new ArrayList<>();
 
     public ChatMemberDocument toDocument() {
         return ChatMemberDocument.builder()
                 .uid(this.uid)
-                .username(this.username)
+                .name(this.name)
                 .email(this.email)
                 .hp(this.hp)
                 .level(this.level)
                 .group(this.group)
                 .profileUrl(this.profileUrl)
-                .frequent_members(this.frequent_members.stream().map(ChatMembersDTO::toDocument).toList())
+                .frequent_members(this.frequent_members.stream().map(ChatMemberDTO::toDocument).toList())
                 .roomIds(this.roomIds)
                 .build();
     }

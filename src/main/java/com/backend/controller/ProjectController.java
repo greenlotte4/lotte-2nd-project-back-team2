@@ -1,6 +1,7 @@
 package com.backend.controller;
 
 import com.backend.dto.request.project.PostProjectDTO;
+import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.entity.project.Project;
 import com.backend.service.ProjectService;
 import com.backend.service.UserService;
@@ -36,6 +37,13 @@ public class ProjectController {
         Map<String,Object> map = projectService.getAllProjects(ownerUid);
 
         return ResponseEntity.ok().body(map);
+    }
+    @GetMapping("/project/{id}")
+    public ResponseEntity<?> readProject( @PathVariable Long id ) {
+
+        GetProjectDTO dto = projectService.getProject(id);
+
+        return ResponseEntity.ok().body(dto);
     }
 
 }

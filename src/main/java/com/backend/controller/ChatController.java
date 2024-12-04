@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Log4j2
@@ -27,7 +28,7 @@ public class ChatController {
     private final UserService userService;
     private final GroupService groupService;
 
-    @GetMapping("/room/{userUid}")
+    @GetMapping("/room/{userUid}") // 유저 uid로 해당 유저가 속한 모든 채팅방 조회
     public ResponseEntity<?> getAllChatRooms(@PathVariable String userUid) {
         log.info("userUid = " + userUid);
 
@@ -37,6 +38,17 @@ public class ChatController {
             return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.ok(chatRoomDTOS);
+        }
+    }
+
+    @GetMapping("/roomInfo/{roomId}") // 채팅방 id로 해당 채팅방의 정보 조회
+    public ResponseEntity<?> getChatRoomInfo(@PathVariable String roomId) {
+        log.info("roomId = " + roomId);
+        ChatRoomDTO chatRoomDTO = chatService.getChatRoomInfo(roomId);
+        if (chatRoomDTO == null) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(chatRoomDTO);
         }
     }
 
@@ -65,7 +77,7 @@ public class ChatController {
         }
     }
 
-    @PatchMapping("/frequent")
+    @PatchMapping("/frequentRoom")
     public ResponseEntity<?> updateFrequent(@RequestBody ChatRoomDTO chatRoomDTO) {
         log.info("chatRoomDTO : " + chatRoomDTO);
 
@@ -77,4 +89,27 @@ public class ChatController {
         }
     }
 
+    @GetMapping("/member/{uid}")
+    public ResponseEntity<?> getAllFrequentMembers(@PathVariable String uid) {
+        log.info("uid = " + uid);
+        ChatMemberDocument chatMemberDocument = chatService.findChatMember(uid);
+        log.info("chatMemberDocument = " + chatMemberDocument);
+        return ResponseEntity.ok(Objects.requireNonNullElse(chatMemberDocument.toDTO(), "error"));
+    }
+
+    @PatchMapping("/frequentMembers")
+    public ResponseEntity<?> updateFrequentMembers(@RequestParam("uid") String uid, @RequestParam("frequentUid") String frequentUid) {
+        log.info("uid = " + uid + " frequentUid = " + frequentUid);
+
+        String email = userService.getUserByuid(uid).getEmail();
+
+        ChatMemberDocument frequentMember = chatService.findChatMember(frequentUid);
+
+        ChatMemberDocument savedDocument = chatService.updateChatMemberFavorite(email, frequentMember);
+        if (savedDocument != null) {
+            return ResponseEntity.ok("success");
+        } else {
+            return ResponseEntity.ok("error");
+        }
+    }
 }

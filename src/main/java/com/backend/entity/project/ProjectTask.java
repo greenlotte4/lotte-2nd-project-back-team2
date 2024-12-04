@@ -1,5 +1,6 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectTaskDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,4 +39,16 @@ public class ProjectTask {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TaskTag> tags = new ArrayList<>();
+
+    public GetProjectTaskDTO toGetProjectTaskDTO() {
+        return GetProjectTaskDTO.builder()
+                .id(id)
+                .columnId(columnId)
+                .title(title)
+                .content(content)
+                .priority(priority)
+                .status(status)
+                .duedate(duedate)
+                .build();
+    }
 }

@@ -91,8 +91,7 @@ public class CalendarService {
         return ResponseEntity.ok(dtos);
     }
 
-    public ResponseEntity<?> getCalendarContentToday() {
-        Long userId = 9L;
+    public ResponseEntity<?> getCalendarContentToday(Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지 않습니다...");
@@ -126,8 +125,7 @@ public class CalendarService {
         return ResponseEntity.ok(dtos);
     }
 
-    public ResponseEntity<?> postCalendarContent(PostCalendarContentDto dto) {
-        Long userId = 9L;
+    public ResponseEntity<?> postCalendarContent(PostCalendarContentDto dto,Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지 않습니다...");
@@ -158,25 +156,21 @@ public class CalendarService {
         return ResponseEntity.ok(map);
     }
 
-    public ResponseEntity<?> putCalendarContents(List<PutCalendarContentsDto> dtos) {
-        Long userId = 9L;
+    public ResponseEntity<?> putCalendarContents(PutCalendarContentsDto dto,Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다...");
         }
-        for(PutCalendarContentsDto dto : dtos){
-            Optional<CalendarContent> content = calendarContentRepository.findByCalendarContentId(dto.getContentId());
-            if(content.isEmpty()){
-                return ResponseEntity.badRequest().body("일정 정보가 일치하지않습니다...");
-            }
-            content.get().putContents(dto);
-        }
 
+        Optional<CalendarContent> contents = calendarContentRepository.findByCalendarContentIdAndStatusIsNot(dto.getContentId(),0);
+        if(contents.isEmpty()){
+            return ResponseEntity.badRequest().body("수정할 캘린더가 존재하지 않습니다...");
+        }
+        contents.get().patchContent(dto);
         return ResponseEntity.ok().body("수정이 완료되었습니다.");
     }
 
-    public ResponseEntity<?> getCalendarContentAfternoon(String today) {
-        Long userId = 9L;
+    public ResponseEntity<?> getCalendarContentAfternoon(String today,Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다...");
@@ -222,8 +216,7 @@ public class CalendarService {
         return ResponseEntity.ok(dtos);
     }
 
-    public ResponseEntity<?> getCalendarContentMorning(String today) {
-        Long userId = 9L;
+    public ResponseEntity<?> getCalendarContentMorning(String today,Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다...");
@@ -299,8 +292,7 @@ public class CalendarService {
         return ResponseEntity.ok().body(map);
     }
 
-    public ResponseEntity<?> postCalendar(PostCalendarDto dto) {
-        Long myId = 9L;
+    public ResponseEntity<?> postCalendar(PostCalendarDto dto, Long myId) {
         if(dto.getStatus()==1){
             Optional<User> user = userRepository.findById(myId);
             if(user.isEmpty()){
@@ -338,11 +330,12 @@ public class CalendarService {
         Map<String, Object> map = new HashMap<>();
         map.put("message","캘린더 등록이 완료되었습니다.");
         map.put("calendarName",nameDto);
+        map.put("myid",myId);
+        map.put("calendarId",calendar.getCalendarId());
         return ResponseEntity.ok(map);
     }
 
-    public ResponseEntity<?> getCalendarByGroup(Long id) {
-        Long userId = 9L;
+    public ResponseEntity<?> getCalendarByGroup(Long id,Long userId) {
         Optional<User> user = userRepository.findById(userId);
         if(user.isEmpty()){
             return ResponseEntity.badRequest().body("로그인 정보가 일치하지않습니다.");
@@ -364,8 +357,7 @@ public class CalendarService {
         return ResponseEntity.ok(dtos);
     }
 
-    public ResponseEntity<?> putCalendar(PutCalendarDto dtos) {
-        Long myId = 9L;
+    public ResponseEntity<?> putCalendar(PutCalendarDto dtos,Long myId) {
         if(dtos.getStatus()==1){
             Optional<User> user = userRepository.findById(myId);
             if(user.isEmpty()){
@@ -432,7 +424,7 @@ public class CalendarService {
         }
         Long userId = user.get().getId();
 
-        List<CalendarMapper> mappers = calendarMapperRepository.findAllByUserAndCalendar_StatusIsNot(user.get(),1);
+        List<CalendarMapper> mappers = calendarMapperRepository.findAllByUserAndCalendar_StatusIsNot(user.get(),0);
         if(mappers.isEmpty()){
             return ResponseEntity.ok().body("등록된 캘린더가 없습니다...");
         }
@@ -440,9 +432,6 @@ public class CalendarService {
         Map<String,Object> map = new HashMap<>();
         map.put("calendarIds",calendarIds);
         map.put("userId",userId);
-        System.out.println("================");
-        System.out.println(userId);
-        System.out.println(calendarIds);
         return ResponseEntity.ok(map);
     }
 }

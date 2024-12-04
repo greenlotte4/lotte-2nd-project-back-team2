@@ -6,7 +6,6 @@ import com.backend.dto.chat.ChatRoomDTO;
 import com.backend.entity.user.User;
 import com.backend.repository.chat.ChatMemberRepository;
 import com.backend.repository.chat.ChatRoomRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -30,6 +29,15 @@ public class ChatService {
         return savedDocument.getId();
     }
 
+    public ChatRoomDTO getChatRoomInfo(String chatRoomId) {
+        log.info("chatRoomId: " + chatRoomId);
+        if (chatRoomRepository.findById(chatRoomId).isPresent()) {
+            ChatRoomDocument chatRoomDocument = chatRoomRepository.findById(chatRoomId).get();
+            return chatRoomDocument.toDTO();
+        }
+        return null;
+    }
+
     public List<ChatRoomDTO> getAllChatRoomsByUserId(String userId) {
         List<ChatRoomDocument> chatRoomList = chatRoomRepository.findAllByLeaderOrMembers(userId, userId);
         log.info("chatRoomList: " + chatRoomList);
@@ -44,7 +52,7 @@ public class ChatService {
         chatMemberDocument.setEmail(user.getEmail());
         chatMemberDocument.setHp(user.getHp());
         chatMemberDocument.setLevel(user.getLevel());
-        chatMemberDocument.setUsername(user.getName());
+        chatMemberDocument.setName(user.getName());
         chatMemberDocument.setGroup(groupName);
         chatMemberDocument.getRoomIds().add(chatRoomId);
 
@@ -59,6 +67,34 @@ public class ChatService {
         }
         ChatRoomDocument savedDocument = chatRoomRepository.save(chatRoomDocument);
         return savedDocument;
+    }
+
+    public ChatMemberDocument updateChatMemberFavorite(String email, ChatMemberDocument frequentMember)  {
+        log.info("frequentMember: " + frequentMember);
+        ChatMemberDocument loginUser = chatMemberRepository.findByEmail(email);
+        log.info("loginUser: " + loginUser);
+        if (loginUser != null) {
+            if (!loginUser.getFrequent_members().contains(frequentMember)) {
+                log.info("중복 없음 - 추가");
+                loginUser.getFrequent_members().add(frequentMember);
+            } else {
+                log.info("중복 있음 - 제거");
+                loginUser.getFrequent_members().remove(frequentMember);
+            }
+            return chatMemberRepository.save(loginUser);
+        } else {
+            log.error("해당 이메일의 사용자를 찾을 수 없습니다: {}", email);
+        }
+        return null;
+    }
+
+    public ChatMemberDocument findChatMember(String uid) {
+        if (chatMemberRepository.findByUid(uid) != null) {
+            ChatMemberDocument document = chatMemberRepository.findByUid(uid);
+            log.info("document: " + document);
+            return document;
+        }
+        return null;
     }
 
 }

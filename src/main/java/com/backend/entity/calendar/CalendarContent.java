@@ -103,4 +103,11 @@ public class CalendarContent {
         this.calendarStartDate = LocalDateTime.parse(dto.getSdate(), formatter);
         this.calendarEndDate = LocalDateTime.parse(dto.getEdate(), formatter);
     }
+
+    public void patchContent(PutCalendarContentsDto dto) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        this.name = dto.getTitle();
+        this.calendarStartDate = LocalDateTime.parse(dto.getStartDate(), formatter);
+        this.calendarEndDate = LocalDateTime.parse(dto.getEndDate(), formatter);
+    }
 }

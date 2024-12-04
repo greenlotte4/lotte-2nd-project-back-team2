@@ -322,4 +322,13 @@ public class GroupService {
         return groupMapper.getGroup().getName();
     }
 
+    public List<GroupMapper> findAllGroupMappers() {
+        List<GroupMapper> groupMappers = groupMapperRepository.findAll();
+        if(groupMappers.isEmpty()){
+            return groupMappers;
+        } else {
+            return groupMappers;
+        }
+    }
+
 }

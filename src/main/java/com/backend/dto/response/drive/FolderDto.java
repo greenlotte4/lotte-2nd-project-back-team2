@@ -33,4 +33,6 @@ public class FolderDto {
     private int isPinned=0;
     private String parentId;
     private String path;
+    private int size;
+    private String parentPath;
 }

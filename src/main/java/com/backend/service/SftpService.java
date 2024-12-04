@@ -7,7 +7,13 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Vector;
 
 @Log4j2
@@ -21,7 +27,8 @@ public class SftpService {
     private static final String SFTP_USER = "sftpuser";
     private static final String SFTP_PASSWORD = "Lotte4!@12";
 
-    private static final String BASE_SFTP_DIR = "/uploads/";
+    private static final String BASE_SFTP_DIR = "uploads/";
+
 
 
     //user별 sftpUser 생성
@@ -339,7 +346,7 @@ public class SftpService {
             }
 
             if (entry.getAttrs().isDir()) {
-                // 디렉토리인 경우 재귀적으로 크기 계산
+                // 디렉토리인 경우 재귀적��로 크기 계산
                 totalSize += calculateSizeRecursive(channelSftp, path + "/" + fileName);
             } else {
                 // 파일 크기 합산
@@ -403,8 +410,64 @@ public class SftpService {
 
     }
 
+    public long calculatedSize(String uid) {
+        long size = 0;
+        String path = BASE_SFTP_DIR + uid;
+
+        try {
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
+            session.setPassword(SFTP_PASSWORD);
+
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+
+            session.connect();
+            log.info("SFTP session connected to host: {}", SFTP_HOST);
+
+            // SFTP 디렉토리 크기 계산 명령어
+            String command = String.format("du -sh %s", path);
+            log.info("Executing command: {}", command);
+
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command);
+            channel.setErrStream(System.err);
+
+            InputStream in = channel.getInputStream();
+            channel.connect();
+
+            // 명령어 실행 결과 읽기
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                log.info("Command output: {}", line);
+                // 명령어 결과가 "크기\t경로" 형식이므로 크기만 추출
+                size = Long.parseLong((line.split("\\s+")[0]));
+            }
+
+            // 명령어 실행 종료 상태 확인
+            int exitStatus = channel.getExitStatus();
+            if (exitStatus == 0) {
+                log.info("Command executed successfully, size: {}", size);
+            } else {
+                log.error("Command execution failed with exit status: {}", exitStatus);
+            }
+
+            channel.disconnect();
+            session.disconnect();
+            log.info("SFTP session disconnected");
+
+        } catch (Exception e) {
+            log.error("Error calculating folder size: {}", e.getMessage(), e);
+        }
 
 
 
-
+        return size;
     }
+
+
+
+
+}

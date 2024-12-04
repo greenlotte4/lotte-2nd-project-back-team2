@@ -1,22 +1,15 @@
 package com.backend.controller;
 
-import com.backend.dto.request.LoginDto;
+import com.backend.dto.chat.UsersWithGroupNameDTO;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.response.GetAdminUsersRespDto;
-import com.backend.dto.response.UserDto;
 import com.backend.dto.response.user.GetUsersAllDto;
-import com.backend.entity.user.User;
-import com.backend.repository.UserRepository;
 import com.backend.service.GroupService;
 import com.backend.service.UserService;
-import com.backend.util.jwt.JwtTokenProvider;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -40,8 +33,8 @@ public class UserController {
 
     // 11.29 전규찬 전체 사용자 조회
     @GetMapping("/allUsers")
-    public ResponseEntity<?> getAllUser(){
-        List<GetAdminUsersRespDto> users = userService.getAllUsers();
+    public ResponseEntity<?> getAllUserWithGroupName(){
+        List<UsersWithGroupNameDTO> users = userService.getAllUsersWithGroupName();
         return ResponseEntity.ok(users);
     }
 

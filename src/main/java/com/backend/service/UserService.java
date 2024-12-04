@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.dto.chat.UsersWithGroupNameDTO;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.request.user.EmailDTO;
 import com.backend.dto.request.user.PaymentInfoDTO;
@@ -12,6 +13,7 @@ import com.backend.entity.group.GroupMapper;
 import com.backend.entity.user.CardInfo;
 import com.backend.entity.user.Terms;
 import com.backend.entity.user.User;
+import com.backend.repository.GroupMapperRepository;
 import com.backend.repository.GroupRepository;
 import com.backend.repository.UserRepository;
 import com.backend.repository.user.CardInfoRepository;
@@ -35,6 +37,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -51,6 +54,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final GroupMapperRepository groupMapperRepository;
     private final TermsRepository termsRepository;
     private final CardInfoRepository cardInfoRepository;
     private final JavaMailSenderImpl mailSender;
@@ -85,9 +89,23 @@ public class UserService {
     }
 
     // 11.29 전규찬 전체 사용자 조회 기능 추가
-    public List<GetAdminUsersRespDto> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream().map(User::toGetAdminUsersRespDto).toList();
+    public List<UsersWithGroupNameDTO> getAllUsersWithGroupName() {
+        List<GroupMapper> groupMappers = groupMapperRepository.findAll();
+        List<UsersWithGroupNameDTO> usersWithGroupNameDTOs = new ArrayList<>();
+        for(GroupMapper groupMapper : groupMappers){
+            UsersWithGroupNameDTO dto = new UsersWithGroupNameDTO();
+
+            User user = groupMapper.getUser();
+            Group group = groupMapper.getGroup();
+
+            dto.setId(user.getId());
+            dto.setUid(user.getUid());
+            dto.setName(user.getName());
+            dto.setEmail(user.getEmail());
+            dto.setGroupName(group.getName());
+            usersWithGroupNameDTOs.add(dto);
+        }
+        return usersWithGroupNameDTOs;
     }
 
     public Page<GetUsersAllDto> getUsersAll(int page) {

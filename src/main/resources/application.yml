@@ -46,7 +46,7 @@ spring:
                         enable: true
         default-encoding: UTF-8
 file-server:
-    url: 43.202.45.49
+    url: 3.35.170.26
 token:
     secret:
         key: "vQ9q7lwzGS2M+cjRz+Q5N2Cv3+6s49R7TmQ0gkzHpY2UM5kAzwp4Aaz+q5lX3p0ykAzE7HgFmbFMcmU5CwmfKQ=="

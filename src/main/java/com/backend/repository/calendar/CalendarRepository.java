@@ -15,4 +15,6 @@ public interface CalendarRepository extends JpaRepository<Calendar, Long> {
     Optional<Calendar> findByCalendarId(Long calendarId);
 
     Optional<Calendar> findByCalendarContents_CalendarContentId(Long contentId);
+
+    Optional<Calendar> findByCalendarIdAndCalendarContents_StatusIsNot(long l, int i);
 }

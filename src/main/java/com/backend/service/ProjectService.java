@@ -1,7 +1,7 @@
 package com.backend.service;
 
 import com.backend.dto.request.project.PostProjectDTO;
-import com.backend.dto.response.project.GetProjectListDTO;
+import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectCoworker;
@@ -13,10 +13,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -78,6 +75,15 @@ public class ProjectService {
         map.put("completed", groupedByStatus.getOrDefault("completed", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).toList());
         map.put("count",allProjects.size());
         return map;
+    }
+
+    public GetProjectDTO getProject(Long projectId) {
+        Optional<Project> optProject = projectRepository.findById(projectId);
+        if (optProject.isPresent()) {
+            Project project = optProject.get();
+            return project.toGetProjectDTO();
+        }
+        return null;
     }
 
 }

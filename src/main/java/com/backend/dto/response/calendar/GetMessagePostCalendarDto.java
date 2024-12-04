@@ -14,4 +14,5 @@ public class GetMessagePostCalendarDto {
     private String name;
     private String color;
     private int status;
+    private Long id;
 }

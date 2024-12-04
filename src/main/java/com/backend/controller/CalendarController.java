@@ -26,31 +26,62 @@ public class CalendarController {
 
     @PostMapping("/calendar/content")
     public ResponseEntity<?> postCalendarContent (
-            @RequestBody PostCalendarContentDto dto
+            @RequestBody PostCalendarContentDto dto,
+            HttpServletRequest req
     ) {
-        ResponseEntity<?> response = calendarService.postCalendarContent(dto);
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.postCalendarContent(dto,id);
         return response;
     }
 
     @GetMapping("/calendar/content/name/today")
-    public ResponseEntity<?> getCalendarContentToday () {
-        ResponseEntity<?> response = calendarService.getCalendarContentToday();
+    public ResponseEntity<?> getCalendarContentToday (HttpServletRequest req) {
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.getCalendarContentToday(id);
         return response;
     }
 
     @GetMapping("/calendar/content/name/morning")
     public ResponseEntity<?> getCalendarContentMorning (
-            @RequestParam String today
+            @RequestParam String today,
+            HttpServletRequest req
     ) {
-        ResponseEntity<?> response = calendarService.getCalendarContentMorning(today);
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.getCalendarContentMorning(today,id);
         return response;
     }
 
     @GetMapping("/calendar/content/name/afternoon")
     public ResponseEntity<?> getCalendarContentAfternoon (
-            @RequestParam String today
+            @RequestParam String today,
+            HttpServletRequest req
     ) {
-        ResponseEntity<?> response = calendarService.getCalendarContentAfternoon(today);
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.getCalendarContentAfternoon(today,id);
         return response;
     }
 
@@ -75,7 +106,6 @@ public class CalendarController {
             @RequestParam(value = "calendarId",defaultValue = "0") Long calendarId,
             HttpServletRequest req
     ){
-        System.out.println("sdfsdf");
         Object idObj = req.getAttribute("id");
         Long id;
         if (idObj != null) {
@@ -83,7 +113,6 @@ public class CalendarController {
         } else {
             id= 0L;
         }
-        System.out.println("dd?");
         ResponseEntity<?> response = calendarService.getCalendar(id);
         return response;
 
@@ -91,9 +120,17 @@ public class CalendarController {
 
     @PutMapping("/calendar/contents")
     public ResponseEntity<?> putCalendarContents (
-            @RequestBody List<PutCalendarContentsDto> dtos
+            @RequestBody PutCalendarContentsDto dto,
+            HttpServletRequest req
     ){
-        ResponseEntity<?> response = calendarService.putCalendarContents(dtos);
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.putCalendarContents(dto,id);
         return response;
     }
 
@@ -115,26 +152,49 @@ public class CalendarController {
 
     @PostMapping("/calendar")
     public ResponseEntity<?> postCalendar (
-            @RequestBody PostCalendarDto dto
+            @RequestBody PostCalendarDto dto,
+            HttpServletRequest req
     ){
-
-        ResponseEntity<?> response = calendarService.postCalendar(dto);
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.postCalendar(dto,id);
         return response;
     }
 
     @GetMapping("/calendar/users")
     public ResponseEntity<?> getCalendarUsers (
-            @RequestParam Long id
+            @RequestParam Long id,
+            HttpServletRequest req
     ){
-        ResponseEntity<?> response = calendarService.getCalendarByGroup(id);
+        Object idObj = req.getAttribute("id");
+        Long userId;
+        if (idObj != null) {
+            userId = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            userId= 0L;
+        }
+        ResponseEntity<?> response = calendarService.getCalendarByGroup(id,userId);
         return response;
     }
 
     @PutMapping("/calendar")
     public ResponseEntity<?> putCalendar (
-            @RequestBody PutCalendarDto dtos
+            @RequestBody PutCalendarDto dtos,
+            HttpServletRequest req
     ){
-        ResponseEntity<?> response = calendarService.putCalendar(dtos);
+        Object idObj = req.getAttribute("id");
+        Long userId;
+        if (idObj != null) {
+            userId = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            userId= 0L;
+        }
+        ResponseEntity<?> response = calendarService.putCalendar(dtos,userId);
         return response;
     }
 
