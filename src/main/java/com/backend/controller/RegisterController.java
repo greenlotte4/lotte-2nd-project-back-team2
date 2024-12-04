@@ -65,9 +65,9 @@ public class RegisterController {
         try {
             Boolean result = userService.registerValidation(value, type);
             if (result) {
-                return ResponseEntity.ok("사용 가능한 " + type);
+                return ResponseEntity.ok("available");
             } else {
-                return ResponseEntity.ok("이미 사용 중인 " + type);
+                return ResponseEntity.ok("unavailable");
             }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
