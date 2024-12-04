@@ -1,6 +1,7 @@
 package com.backend.service;
 
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
+import com.backend.dto.request.user.EmailDTO;
 import com.backend.dto.request.user.PaymentInfoDTO;
 import com.backend.dto.request.user.PostUserRegisterDTO;
 import com.backend.dto.response.GetAdminUsersRespDto;
@@ -22,10 +23,13 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
@@ -34,17 +38,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class UserService {
+
+    @Value("${spring.mail.username}")
+    private String sender;
+
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final TermsRepository termsRepository;
     private final CardInfoRepository cardInfoRepository;
     private final JavaMailSenderImpl mailSender;
+    @Autowired
+    private final RedisTemplate<String, String> redisTemplate;
 
     public List<GetAdminUsersRespDto> getUserNotTeamLeader() {
         List<User> users = userRepository.findAllByRole(Role.WORKER);
@@ -185,16 +196,20 @@ public class UserService {
         return cardInfo.getCardId();
     }
 
-    @Value("${spring.mail.username}")
-    private String sender;
 
-    public void sendEmailCode( String receiver){
+    public Boolean sendEmailCode( String receiver){
         // MimeMessage 생성
         MimeMessage message = mailSender.createMimeMessage();
 
         // 인증코드 생성 후 세션 저장
         String code = makeRandomCode(6);
         log.info("인증코드 만듦 "+code);
+
+        // Redis에 저장
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+//        String redisKey = receiver; // Redis 키 생성
+        valueOperations.set(receiver, code, 5, TimeUnit.MINUTES); // 5분 동안 저장
+        log.info("인증코드 Redis에 저장: key={}, value={}", receiver, code);
 
         String title = "Plantry에서 보낸 인증코드를 확인하세요.";
         String content = "<!DOCTYPE html>" +
@@ -229,8 +244,40 @@ public class UserService {
 
             // 메일 발송
             mailSender.send(message);
+            return true;
         }catch(Exception e){
             log.error("sendEmailConde : " + e.getMessage());
+            return false;
         }
+    }
+
+    public String getEmailCode(EmailDTO emailDTO) {
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        String redisKey = emailDTO.getEmail(); // Redis 키 생성
+        return valueOperations.get(redisKey);
+    }
+
+    public Boolean registerValidation(String value, String type) {
+        Optional<User> optUser = Optional.empty();
+        switch (type) {
+            case "email":
+                optUser = userRepository.findByEmail(value);
+                break;
+            case "hp":
+                optUser = userRepository.findByHp(value);
+                break;
+            case "uid":
+                optUser = userRepository.findByUid(value);
+                break;
+            default:
+                log.warn("유효하지 않은 타입: {}", type);
+                throw new IllegalArgumentException("유효하지 않은 타입입니다: " + type);
+        }
+        if(optUser.isPresent()) {
+            log.info("유효성검사 데이터 잘 뽑히는지 확인 "+optUser);
+            return false;
+        }
+        log.info("유효성검사 데이터 잘 뽑히는지 확인 null 넣은 거"+optUser);
+        return true;
     }
 }

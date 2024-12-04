@@ -32,4 +32,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findAllByCompanyAndNameContainingAndStatusIsNotAndGroupMappers_Group_Id(String number, String keyword, int i, Long id, Pageable pageable);
 
     Page<User> findAllByCompanyAndStatusIsNotAndGroupMappers_Group_Id(String number, int i, Long id, Pageable pageable);
+
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByHp(String hp);
 }

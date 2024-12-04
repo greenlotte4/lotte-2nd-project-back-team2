@@ -217,18 +217,11 @@ public class User {
 
     public UserDto toSliceDto() {
 
-        String sname = profileImg != null ? profileImg.getSName() : ""; // null 체크 추가
         return UserDto.builder()
-                .id(this.id)
                 .uid(this.uid)
-                .role(this.role)
-                .level(this.level)
                 .grade(this.grade)
-                .email(this.email)
-                .name(this.name)
-                .company(this.company)
-                .profileImg(sname)
-                .createAt(this.createAt)
+                .role(this.role)
+                .id(this.id)
                 .build();
     }
 

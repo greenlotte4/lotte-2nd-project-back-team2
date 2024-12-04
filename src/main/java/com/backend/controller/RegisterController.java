@@ -1,7 +1,9 @@
 package com.backend.controller;
 
+import com.backend.dto.request.user.EmailDTO;
 import com.backend.dto.request.user.PaymentInfoDTO;
 import com.backend.dto.request.user.PostUserRegisterDTO;
+import com.backend.dto.request.user.RegisterValidationDTO;
 import com.backend.dto.response.user.TermsDTO;
 import com.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -32,14 +34,48 @@ public class RegisterController {
     }
 
     @PostMapping("/sendMail")
-    public void sendMail(@RequestBody String receiver){
-        log.info("이메일 전송 컨트롤러 "+receiver);
-        userService.sendEmailCode(receiver);
+    public ResponseEntity<?> sendMail(@RequestBody EmailDTO emailDTO){
+        String receiver = emailDTO.getEmail();
+        Boolean result = userService.sendEmailCode(receiver);
+        if(result){
+            return ResponseEntity.ok().body("success");
+        }else{
+            return ResponseEntity.ok().body("fail");
+        }
+    }
 
+    @PostMapping("/verifyMail")
+    public ResponseEntity<?> verifyMailCode(@RequestBody EmailDTO emailDTO){
+        String code = userService.getEmailCode(emailDTO);
+        if(code.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        if(code.equals(emailDTO.getCode())){
+            return ResponseEntity.ok().body("success");
+        }else {
+            return ResponseEntity.ok().body("notMatch");
+        }
+    }
+
+    @PostMapping("/validation")
+    public ResponseEntity<?> registerValidation(@RequestBody RegisterValidationDTO dto){
+        String type = dto.getType();
+        String value = dto.getValue();
+        log.info("유효성검사 컨트롤러 "+type+" "+value+dto);
+        try {
+            Boolean result = userService.registerValidation(value, type);
+            if (result) {
+                return ResponseEntity.ok("사용 가능한 " + type);
+            } else {
+                return ResponseEntity.ok("이미 사용 중인 " + type);
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(PostUserRegisterDTO dto){
+    public ResponseEntity<?> register(@RequestBody PostUserRegisterDTO dto){
 
         PaymentInfoDTO paymentInfoDTO = dto.getPaymentInfo();
         paymentInfoDTO.setActiveStatus(1);

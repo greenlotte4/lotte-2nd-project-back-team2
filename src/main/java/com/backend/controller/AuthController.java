@@ -62,10 +62,6 @@ public class AuthController {
             cookie.setMaxAge(60*60*24*7);
             resp.addCookie(cookie);
 
-            //리프레시토큰 redis 저장 할까말까
-//            storeRefreshTokenInRedis(refreshToken, userDto.getUid(), userDto.getRole().toString(), Duration.ofDays(7).toMillis());
-
-
             Map<String, Object> response = new HashMap<>();
             response.put("token",accessToken);
             response.put("role",user.get().getRole());
