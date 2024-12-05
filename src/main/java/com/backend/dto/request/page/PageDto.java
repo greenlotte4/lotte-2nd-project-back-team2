@@ -33,7 +33,7 @@ public class PageDto {
         Page page = null;
 
             page = Page.builder()
-                    .id(this.id)
+                    .id(id)
                     .title(title)
                     .content(content) // JSON 객체를 문자열로 변환
                     .ownerUid(ownerUid)
