@@ -21,5 +21,5 @@ public class PostUserRegisterDTO {
     private Role role;
     private Long paymentId;
     private PaymentInfoDTO paymentInfo;
-
+    private String companyCode;
 }

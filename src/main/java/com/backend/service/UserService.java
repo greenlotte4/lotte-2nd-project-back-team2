@@ -295,7 +295,7 @@ public class UserService {
             log.info("유효성검사 데이터 잘 뽑히는지 확인 "+optUser);
             return false;
         }
-        log.info("유효성검사 데이터 잘 뽑히는지 확인 null 넣은 거"+optUser);
+        log.info("유효성검사 데이터 없는 거"+optUser);
         return true;
     }
 }
