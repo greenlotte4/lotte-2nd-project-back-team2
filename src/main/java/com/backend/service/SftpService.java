@@ -12,9 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.Properties;
-import java.util.Scanner;
-import java.util.Vector;
+import java.util.*;
 
 @Log4j2
 @Service
@@ -331,32 +329,6 @@ public class SftpService {
     }
 
 
-    private long calculateSizeRecursive(ChannelSftp channelSftp, String username) throws SftpException {
-        long totalSize = 0;
-
-        String path = BASE_SFTP_DIR+username;
-        Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(path);
-
-        for (ChannelSftp.LsEntry entry : entries) {
-            String fileName = entry.getFilename();
-
-            // 현재 디렉토리와 상위 디렉토리 제외
-            if (".".equals(fileName) || "..".equals(fileName)) {
-                continue;
-            }
-
-            if (entry.getAttrs().isDir()) {
-                // 디렉토리인 경우 재귀적��로 크기 계산
-                totalSize += calculateSizeRecursive(channelSftp, path + "/" + fileName);
-            } else {
-                // 파일 크기 합산
-                totalSize += entry.getAttrs().getSize();
-            }
-        }
-
-        return totalSize;
-
-    }
 
 
     public boolean renameFolder(String currentPath, String newPath){
@@ -410,8 +382,8 @@ public class SftpService {
 
     }
 
-    public long calculatedSize(String uid) {
-        long size = 0;
+    public  long  calculatedSize(String uid) {
+        long sizeInKB = 0;
         String path = BASE_SFTP_DIR + uid;
 
         try {
@@ -427,29 +399,77 @@ public class SftpService {
             log.info("SFTP session connected to host: {}", SFTP_HOST);
 
             // SFTP 디렉토리 크기 계산 명령어
-            String command = String.format("du -sh %s", path);
+            String command = "du -sh " + path;
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command);
+
+            InputStream inputStream = channel.getInputStream();
+            channel.connect();
+
+            Scanner scanner = new Scanner(inputStream);
+            if (scanner.hasNextLine()) {
+                String[] output = scanner.nextLine().split("\\s+");
+                if (output.length > 0) {
+                    String sizeStr = output[0];
+                    sizeInKB = parseSizeToKB(sizeStr);
+                    log.info("Folder size in KB: {}", sizeInKB);
+                }
+            } else {
+                log.error("No output received from command.");
+            }
+            scanner.close();
+
+            channel.disconnect();
+            session.disconnect();
+
+        } catch (Exception e) {
+            log.error("Error calculating folder size: {}", e.getMessage(), e);
+        }
+
+        return sizeInKB;
+    }
+
+
+    public boolean makeZip(String path, String folderName) {
+        String tmp = BASE_SFTP_DIR + "zip/" + folderName + ".zip";
+        try {
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
+            session.setPassword(SFTP_PASSWORD);
+
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+
+            session.connect();
+            log.info("SFTP session connected to host: {}", SFTP_HOST);
+
+            String command = String.format("/usr/bin/zip -r %s %s", tmp, path);
             log.info("Executing command: {}", command);
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(command);
-            channel.setErrStream(System.err);
 
             InputStream in = channel.getInputStream();
+            InputStream err = channel.getErrStream();
+
             channel.connect();
 
-            // 명령어 실행 결과 읽기
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.info("Command output: {}", line);
-                // 명령어 결과가 "크기\t경로" 형식이므로 크기만 추출
-                size = Long.parseLong((line.split("\\s+")[0]));
+            // 로그 읽기
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                 BufferedReader errorReader = new BufferedReader(new InputStreamReader(err))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info("STDOUT: {}", line);
+                }
+                while ((line = errorReader.readLine()) != null) {
+                    log.error("STDERR: {}", line);
+                }
             }
 
-            // 명령어 실행 종료 상태 확인
             int exitStatus = channel.getExitStatus();
             if (exitStatus == 0) {
-                log.info("Command executed successfully, size: {}", size);
+                log.info("Command executed successfully");
             } else {
                 log.error("Command execution failed with exit status: {}", exitStatus);
             }
@@ -457,17 +477,37 @@ public class SftpService {
             channel.disconnect();
             session.disconnect();
             log.info("SFTP session disconnected");
-
+            return exitStatus == 0;
         } catch (Exception e) {
-            log.error("Error calculating folder size: {}", e.getMessage(), e);
+            log.error("Error creating zip file: {}", e.getMessage(), e);
+            return false;
         }
-
-
-
-        return size;
     }
 
 
+    // 단위 변환 로직
+    private long parseSizeToKB(String sizeStr) {
+        // 숫자와 단위를 분리
+        String numberPart = sizeStr.replaceAll("[^0-9.]", ""); // 숫자만 추출
+        String unitPart = sizeStr.replaceAll("[0-9.]", "").toUpperCase(); // 단위만 추출 (대문자로 변환)
+
+        // 숫자 부분을 파싱
+        double size = Double.parseDouble(numberPart);
+
+        // 단위에 따라 바이트로 변환
+        switch (unitPart) {
+            case "K":
+                return (long) (size * 1024); // KiB to Bytes
+            case "M":
+                return (long) (size * 1024 * 1024); // MiB to Bytes
+            case "G":
+                return (long) (size * 1024 * 1024 * 1024); // GiB to Bytes
+            case "T":
+                return (long) (size * 1024 * 1024 * 1024 * 1024); // TiB to Bytes
+            default:
+                return (long) size; // 기본적으로 Bytes로 간주
+        }
+    }
 
 
 }

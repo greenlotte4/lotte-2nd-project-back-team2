@@ -358,4 +358,22 @@ public class FolderService {
     }
 
 
+    //zip파일 생성
+    public String makeZipfolder(String folderId){
+
+        Optional<Folder> opt = folderMogoRepository.findById(folderId);
+
+        if(opt.isPresent()){
+            Folder folder = opt.get();
+            boolean result = sftpService.makeZip(folder.getPath(), folder.getName());
+            if(result){
+                return folder.getName()+".zip";
+            }
+
+            return null;
+        }
+        return null;
+    }
+
+
 }

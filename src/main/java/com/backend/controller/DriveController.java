@@ -107,13 +107,13 @@ public class DriveController {
         }
         List<FolderDto> folderDtoList =  folderService.getFoldersByUid(uid, rootFolder.getId());
         log.info("folderLIst!!!!"+folderDtoList);
-        long size = sftpService.calculatedSize(uid);
+        long  result  = sftpService.calculatedSize(uid);
 
 
         FolderResponseDto folderResponseDto  = FolderResponseDto.builder()
                 .folderDtoList(folderDtoList)
                 .uid(uid)
-                .size(size)
+                .size(result)
                 .build();
 
         return ResponseEntity.ok().body(folderResponseDto);
@@ -206,6 +206,21 @@ public class DriveController {
         folderService.uploadFiles(files,folderId,maxOrder,uid);
 
         return null;
+    }
+
+    //zip파일 생성하기
+    @GetMapping("/generateZip/{folderId}")
+    public ResponseEntity downloadFile(@PathVariable String folderId){
+        log.info("Download file:"+folderId);
+        Map<String,Object> response = new HashMap<>();
+        String result = folderService.makeZipfolder(folderId);
+
+        if(result != null){
+            response.put("zipName",result);
+            return ResponseEntity.ok().body(response);
+        }else{
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Folder Zip failed");
+        }
     }
 
 
