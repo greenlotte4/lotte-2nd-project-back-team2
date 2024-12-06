@@ -56,7 +56,7 @@ public class ProjectController {
         ProjectTask task = projectService.saveTask(dto);
         return ResponseEntity.ok().body(task);
     }
-    @PatchMapping("/project/coworkers") // 프로젝트 컬럼 생성
+    @PatchMapping("/project/coworkers") // 프로젝트 작업자 목록 수정
     public ResponseEntity<String> updateCoworkers(@RequestBody PatchCoworkersDTO dto) {
         try {
             projectService.updateCoworkers(dto);
