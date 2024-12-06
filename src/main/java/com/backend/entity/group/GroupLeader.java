@@ -1,8 +1,11 @@
 package com.backend.entity.group;
 
+import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.Optional;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,6 +29,11 @@ public class GroupLeader {
     private User user;
 
     public void patchLeader(User user) {
+        this.user = user;
+    }
+
+
+    public void putLeader(User user) {
         this.user = user;
     }
 }

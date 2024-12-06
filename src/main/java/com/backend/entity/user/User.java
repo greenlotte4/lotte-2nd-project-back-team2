@@ -5,6 +5,7 @@ import com.backend.dto.response.GetAdminUsersApprovalRespDto;
 import com.backend.dto.response.GetAdminUsersDtailRespDto;
 import com.backend.dto.response.GetAdminUsersRespDto;
 import com.backend.dto.response.UserDto;
+import com.backend.dto.response.admin.user.GetGroupUsersDto;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.group.GroupMapper;
@@ -52,7 +53,7 @@ public class User {
     @Column(name = "email")
     private String email; 
 
-    @Column(name = "hp")
+    @Column(name = "hp") // 010-5555-4444
     private String hp;
 
     @Column(name = "name")
@@ -70,8 +71,8 @@ public class User {
     @Column(name = "company")
     private String company;
 
-    @Column(name = "company_code")
-    private String companyCode;
+    @Column(name = "company_name")
+    private String companyName;
 
     @Column(name = "payment_id")
     private Long paymentId; // 결제정보 :: 카드아이디
@@ -215,8 +216,9 @@ public class User {
 
     public GetUsersAllDto toGetUsersAllDto (){
         String group;
-        if(!groupMappers.isEmpty()){
-            group = groupMappers.get(0).getGroup().getName();
+        List<GroupMapper> newGroupMappers = groupMappers.stream().filter(v->v.getGroup().getStatus() != 0 && v.getGroup().getType()==0).toList();
+        if(!newGroupMappers.isEmpty()){
+            group = newGroupMappers.get(0).getGroup().getName();
         } else {
             group = "소속없음";
         }
@@ -242,7 +244,33 @@ public class User {
                 .level(this.selectLevelString())
                 .build();
     }
+
+    public GetGroupUsersDto toGetGroupUsersDto (){
+        String yearMonth = this.todaysYearMonth();
+        Attendance attendance1 = attendance.stream().filter(v->v.getYearMonth().equals(yearMonth)).findFirst().get();
+        String todayAttendance;
+        if(attendance1.getStatus()==1){
+            todayAttendance = "결근";
+        }else if(attendance1.getStatus()==2){
+            todayAttendance = "출근";
+        } else {
+            todayAttendance = "퇴사";
+        }
+        return GetGroupUsersDto.builder()
+                .name(this.name)
+                .state("미정")
+                .attendance(todayAttendance)
+                .level(this.selectLevelString())
+                .createAt(DateTimeFormatter.ofPattern("yyyy-MM-dd").format(createAt))
+                .id(this.id)
+                .build();
+    }
+
     public void updateCompanyCode(String companyCode) {
-        this.companyCode = companyCode;
+        this.company = companyCode;
+    }
+
+    public void patchRole(Role role) {
+        this.role = role;
     }
 }

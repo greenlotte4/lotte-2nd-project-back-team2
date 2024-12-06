@@ -1,11 +1,11 @@
 package com.backend.service;
-
 import com.backend.dto.chat.UsersWithGroupNameDTO;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.request.user.EmailDTO;
 import com.backend.dto.request.user.PaymentInfoDTO;
 import com.backend.dto.request.user.PostUserRegisterDTO;
 import com.backend.dto.response.GetAdminUsersRespDto;
+import com.backend.dto.response.admin.user.GetGroupUsersDto;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.dto.response.user.TermsDTO;
 import com.backend.entity.group.Group;
@@ -22,7 +22,6 @@ import com.backend.util.Role;
 import jakarta.mail.Message;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,21 +109,21 @@ public class UserService {
 
     public Page<GetUsersAllDto> getUsersAll(int page) {
         Pageable pageable = PageRequest.of(page, 5);
-        Page<User> users = userRepository.findAllByCompanyAndStatusIsNot("1246857",0,pageable);
+        Page<User> users = userRepository.findAllByCompanyAndStatusIsNotOrderByLevelDesc("1246857",0,pageable);
         Page<GetUsersAllDto> dtos = users.map(User::toGetUsersAllDto);
         return dtos;
     }
 
     public Page<GetUsersAllDto> getUsersAllByKeyword(int page,String keyword) {
         Pageable pageable = PageRequest.of(page, 5);
-        Page<User> users = userRepository.findAllByCompanyAndNameContainingAndStatusIsNot("1246857",keyword,0,pageable);
+        Page<User> users = userRepository.findAllByCompanyAndNameContainingAndStatusIsNotOrderByLevelDesc("1246857",keyword,0,pageable);
         Page<GetUsersAllDto> dtos = users.map(User::toGetUsersAllDto);
         return dtos;
     }
 
     public Page<GetUsersAllDto> getUsersAllByKeywordAndGroup(int page, String keyword, Long id) {
         Pageable pageable = PageRequest.of(page, 5);
-        Page<User> users = userRepository.findAllByCompanyAndNameContainingAndStatusIsNotAndGroupMappers_Group_Id("1246857",keyword,0,id,pageable);
+        Page<User> users = userRepository.findAllByCompanyAndNameContainingAndStatusIsNotAndGroupMappers_Group_IdOrderByLevelDesc("1246857",keyword,0,id,pageable);
         Optional<Group> group = groupRepository.findById(id);
         String groupName = group.get().getName();
         if(groupName.isEmpty()){
@@ -136,7 +135,7 @@ public class UserService {
 
     public Page<GetUsersAllDto> getUsersAllByGroup(int page, Long id) {
         Pageable pageable = PageRequest.of(page, 5);
-        Page<User> users = userRepository.findAllByCompanyAndStatusIsNotAndGroupMappers_Group_Id("1246857",0,id,pageable);
+        Page<User> users = userRepository.findAllByCompanyAndStatusIsNotAndGroupMappers_Group_IdOrderByLevelDesc("1246857",0,id,pageable);
         Optional<Group> group = groupRepository.findById(id);
         String groupName = group.get().getName();
         if(groupName.isEmpty()){
@@ -297,5 +296,32 @@ public class UserService {
         }
         log.info("유효성검사 데이터 없는 거"+optUser);
         return true;
+    }
+
+    public ResponseEntity<?> getALlUsersCnt(String company) {
+        Long cnt = userRepository.countByCompany(company);
+        if(cnt >0){
+            return ResponseEntity.ok(cnt);
+        }
+        return ResponseEntity.ok(0L);
+    }
+
+    public Page<GetGroupUsersDto> getAdminUsersAllByKeyword(int page, String keyword) {
+        return null;
+    }
+
+    public Page<GetGroupUsersDto> getAdminUsersAllByKeywordAndGroup(int page, String keyword, Long id) {
+        return null;
+    }
+
+    public Page<GetGroupUsersDto> getAdminUsersAllByGroup(int page, Long id) {
+        return null;
+    }
+
+    public Page<GetGroupUsersDto> getAdminUsersAll(int page) {
+        Pageable pageable = PageRequest.of(page, 5);
+        Page<User> users = userRepository.findAllByCompanyAndStatusIsNotOrderByLevelDesc("1246857",0,pageable);
+        Page<GetGroupUsersDto> dtos = users.map(User::toGetGroupUsersDto);
+        return dtos;
     }
 }

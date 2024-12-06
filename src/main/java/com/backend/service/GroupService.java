@@ -1,19 +1,27 @@
 package com.backend.service;
 
 import com.backend.dto.request.PostDepartmentReqDto;
+import com.backend.dto.request.admin.group.PostAdminGroupDepartment;
 import com.backend.dto.response.GetAdminSidebarGroupsRespDto;
 import com.backend.dto.response.GetAdminUsersApprovalRespDto;
 import com.backend.dto.response.GetAdminUsersDtailRespDto;
 import com.backend.dto.response.GetAdminUsersRespDto;
+import com.backend.dto.response.admin.group.GetGroupDto;
+import com.backend.dto.response.admin.user.GetGroupUsersDto;
 import com.backend.dto.response.group.GetGroupsAllDto;
-import com.backend.entity.group.GroupLeader;
+import com.backend.dto.response.user.GetUsersAllDto;
+import com.backend.entity.calendar.Calendar;
+import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.group.Group;
+import com.backend.entity.group.GroupLeader;
 import com.backend.entity.group.GroupMapper;
 import com.backend.entity.user.User;
 import com.backend.repository.GroupLeaderRepository;
 import com.backend.repository.GroupMapperRepository;
 import com.backend.repository.GroupRepository;
 import com.backend.repository.UserRepository;
+import com.backend.repository.calendar.CalendarMapperRepository;
+import com.backend.repository.calendar.CalendarRepository;
 import com.backend.util.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +41,8 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupLeaderRepository groupLeaderRepository;
     private final GroupMapperRepository groupMapperRepository;
+    private final CalendarRepository calendarRepository;
+    private final CalendarMapperRepository calendarMapperRepository;
 
 
     public ResponseEntity<?> postDepartment(PostDepartmentReqDto dto) {
@@ -239,6 +249,7 @@ public class GroupService {
     }
 
     public ResponseEntity<?> getGroupMembersDetail(String team) {
+        System.out.println(team);
         List<User> users = new ArrayList<>();
         Optional<Group> group = groupRepository.findByName(team);
         if(group.isEmpty()){
@@ -330,5 +341,257 @@ public class GroupService {
             return groupMappers;
         }
     }
+
+
+    public ResponseEntity<?> getAdminGroupUsers(String group, String company) {
+        Optional<Group> optGroup = groupRepository.findByNameAndStatusIsNotAndCompany(group,0,company);
+        if(optGroup.isEmpty()){
+            return ResponseEntity.badRequest().body("그룹명이 일치하지 않습니다...");
+        }
+        List<GroupMapper> groupMappers = groupMapperRepository.findAllByGroupOrderByUser_LevelDesc(optGroup.get());
+        if(groupMappers.isEmpty()){
+            if(optGroup.get().getType()==0){
+                return ResponseEntity.ok("부서원이 존재하지 않습니다...");
+            } else {
+                return ResponseEntity.ok("팀원이 존재하지 않습니다...");
+            }
+        }
+        List<GetGroupUsersDto> dtos = groupMappers.stream().map(v->v.getUser().toGetGroupUsersDto()).toList();
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    public ResponseEntity<?> postAdminGroupDepartment(PostAdminGroupDepartment dto, String company) {
+        Optional<User> leader = userRepository.findById(dto.getLeader());
+        if(leader.isEmpty()){
+            return ResponseEntity.badRequest().body("부서장 정보가 일치하지 않습니다...");
+        }
+
+        if(leader.get().getRole()==Role.DEPARTMENT || leader.get().getRole()==Role.TEAM){
+            return ResponseEntity.badRequest().body("팀장 또는 부서장은 새로운 부서장이 될 수 없습니다.");
+        }
+        leader.get().patchRole(Role.DEPARTMENT);
+
+        Group group = Group.builder()
+                .type(0)
+                .company(company)
+                .name(dto.getDepName())
+                .description(dto.getDepDescription())
+                .status(1)
+                .link(dto.getLink())
+                .build();
+
+        groupRepository.save(group);
+
+        GroupLeader groupLeader = GroupLeader.builder()
+                .user(leader.get())
+                .group(group)
+                .build();
+
+        groupLeaderRepository.save(groupLeader);
+
+        Calendar calendar = Calendar.builder()
+                .color("pink")
+                .name(dto.getDepName()+" 일정")
+                .status(3)
+                .build();
+
+        calendarRepository.save(calendar);
+
+        List<Long> ids = dto.getUsers();
+        List<GroupMapper> mappers = new ArrayList<>();
+        List<CalendarMapper> calendarMappers = new ArrayList<>();
+        for (Long id : ids) {
+            Optional<User> user = userRepository.findById(id);
+            if(user.isEmpty()){
+                return ResponseEntity.badRequest().body("부서원 정보가 일치하지 않습니다...");
+            }
+            GroupMapper groupMapper = GroupMapper.builder()
+                    .group(group)
+                    .user(user.get())
+                    .build();
+
+            CalendarMapper calendarMapper = CalendarMapper.builder()
+                    .calendar(calendar)
+                    .user(user.get())
+                    .build();
+
+            calendarMappers.add(calendarMapper);
+            mappers.add(groupMapper);
+        }
+        groupMapperRepository.saveAll(mappers);
+        calendarMapperRepository.saveAll(calendarMappers);
+
+        return ResponseEntity.ok("부서 등록이 완료되었습니다.");
+    }
+
+    public ResponseEntity<?> postAdminGroupTeam(PostAdminGroupDepartment dto, String company) {
+        Optional<User> leader = userRepository.findById(dto.getLeader());
+        if(leader.isEmpty()){
+            return ResponseEntity.badRequest().body("팀장 정보가 일치하지 않습니다...");
+        }
+
+        if(leader.get().getRole()==Role.DEPARTMENT || leader.get().getRole()==Role.TEAM){
+            return ResponseEntity.badRequest().body("팀장 또는 부서장은 새로운 팀장이 될 수 없습니다.");
+        }
+        leader.get().patchRole(Role.TEAM);
+
+        Group group = Group.builder()
+                .type(1)
+                .company(company)
+                .name(dto.getDepName())
+                .description(dto.getDepDescription())
+                .status(1)
+                .link(dto.getLink())
+                .build();
+
+        groupRepository.save(group);
+
+        GroupLeader groupLeader = GroupLeader.builder()
+                .user(leader.get())
+                .group(group)
+                .build();
+
+        groupLeaderRepository.save(groupLeader);
+
+        Calendar calendar = Calendar.builder()
+                .color("brown")
+                .name(dto.getDepName()+" 일정")
+                .status(4)
+                .build();
+
+        calendarRepository.save(calendar);
+
+        List<Long> ids = dto.getUsers();
+        List<GroupMapper> mappers = new ArrayList<>();
+        List<CalendarMapper> calendarMappers = new ArrayList<>();
+        for (Long id : ids) {
+            Optional<User> user = userRepository.findById(id);
+            if(user.isEmpty()){
+                return ResponseEntity.badRequest().body("팀원 정보가 일치하지 않습니다...");
+            }
+            GroupMapper groupMapper = GroupMapper.builder()
+                    .group(group)
+                    .user(user.get())
+                    .build();
+
+            CalendarMapper calendarMapper = CalendarMapper.builder()
+                    .calendar(calendar)
+                    .user(user.get())
+                    .build();
+
+            calendarMappers.add(calendarMapper);
+            mappers.add(groupMapper);
+        }
+        groupMapperRepository.saveAll(mappers);
+        calendarMapperRepository.saveAll(calendarMappers);
+
+        return ResponseEntity.ok("팀 등록이 완료되었습니다.");
+    }
+
+    public ResponseEntity<?> getAdminGroup(String name, String company) {
+        Optional<Group> group = groupRepository.findByNameAndStatusIsNotAndCompany(name,0,company);
+        if(group.isEmpty()){
+            return ResponseEntity.badRequest().body("등록된 정보가 없습니다...");
+        }
+        List<GroupMapper> groupMappers = groupMapperRepository.findAllByGroup(group.get());
+        if(groupMappers.isEmpty()){
+            if(group.get().getType()==0){
+                return ResponseEntity.ok("등록된 부서원이 없습니다...");
+            } else {
+                return ResponseEntity.ok("등록된 팀원이 없습니다...");
+            }
+        }
+        List<GetUsersAllDto> groupUserDtos = groupMappers.stream().map(v->v.getUser().toGetUsersAllDto(name)).toList();
+
+        Optional<GroupLeader> leader = groupLeaderRepository.findByGroup(group.get());
+        if(leader.isEmpty()){
+            if(group.get().getType()==0){
+                return ResponseEntity.ok("등록된 부서장이 없습니다...");
+            } else {
+                return ResponseEntity.ok("등록된 팀장이 없습니다...");
+            }
+        }
+
+        GetUsersAllDto leaderDto = leader.get().getUser().toGetUsersAllDto(name);
+
+        GetGroupDto dto = GetGroupDto.builder()
+                .description(group.get().getDescription())
+                .name(group.get().getName())
+                .leader(leaderDto)
+                .users(groupUserDtos)
+                .id(group.get().getId())
+                .link(group.get().getLink())
+                .build();
+
+        return ResponseEntity.ok(dto);
+    }
+
+    public ResponseEntity<?> putAdminGroup(GetGroupDto dto) {
+        Optional<Group> group = groupRepository.findById(dto.getId());
+        if(group.isEmpty()){
+            return ResponseEntity.badRequest().body("그룹 정보가 일치하지않습니다...");
+        }
+        group.get().putData(dto);
+
+        List<GroupMapper> groupMappers = groupMapperRepository.findAllByGroup(group.get());
+        if(groupMappers.isEmpty()){
+            if(group.get().getType()==0){
+                return ResponseEntity.ok("등록된 부서원이 없습니다...");
+            } else {
+                return ResponseEntity.ok("등록된 팀원이 없습니다...");
+            }
+        }
+        groupMapperRepository.deleteAll(groupMappers);
+        List<Long> userIds = dto.getUsers().stream().map(v->v.getId()).toList();
+        List<GroupMapper> updatedGroupMappers = new ArrayList<>();
+        for (Long userId : userIds) {
+            Optional<User> user = userRepository.findById(userId);
+            GroupMapper updatedGroupMapper = GroupMapper.builder()
+                    .group(group.get())
+                    .user(user.get())
+                    .build();
+            updatedGroupMappers.add(updatedGroupMapper);
+        }
+        groupMapperRepository.saveAll(updatedGroupMappers);
+
+        Optional<GroupLeader> groupLeader = groupLeaderRepository.findByGroup(group.get());
+        if(groupLeader.isEmpty()){
+            if(group.get().getType()==0){
+                return ResponseEntity.ok("등록된 부서장이 없습니다...");
+            } else {
+                return ResponseEntity.ok("등록된 팀장이 없습니다...");
+            }
+        }
+        Optional<User> leader = userRepository.findById(dto.getLeader().getId());
+        Optional<User> oldLeader = userRepository.findById(groupLeader.get().getUser().getId());
+        oldLeader.get().patchRole(Role.WORKER);
+        if(group.get().getType()==0){
+            leader.get().patchRole(Role.DEPARTMENT);
+        } else {
+            leader.get().patchRole(Role.TEAM);
+        }
+        groupLeader.get().putLeader(leader.get());
+
+        return ResponseEntity.ok("수정완료");
+    }
+
+    public ResponseEntity<?> deleteAdminGroup(Long id) {
+        Optional<Group> group = groupRepository.findById(id);
+        if(group.isEmpty()){
+            return ResponseEntity.badRequest().body("그룹 정보가 일치하지않습니다...");
+        }
+        group.get().patchStatus(0);
+
+        List<GroupMapper> groupMappers = group.get().getGroupMappers();
+        groupMapperRepository.deleteAll(groupMappers);
+
+        GroupLeader groupLeader = group.get().getGroupLeader();
+        groupLeader.getUser().patchRole(Role.WORKER);
+        groupLeaderRepository.delete(groupLeader);
+
+        return ResponseEntity.ok("삭제완료");
+    }
+
 
 }

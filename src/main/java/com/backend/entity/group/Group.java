@@ -1,6 +1,7 @@
 package com.backend.entity.group;
 
 import com.backend.dto.response.GetAdminSidebarGroupsRespDto;
+import com.backend.dto.response.admin.group.GetGroupDto;
 import com.backend.dto.response.group.GetGroupsAllDto;
 import com.backend.dto.response.user.GetUsersAllDto;
 import jakarta.persistence.*;
@@ -41,6 +42,12 @@ public class Group {
     @Column(name = "company")
     private String company;
 
+    @Column(name = "group_description")
+    private String description;
+
+    @Column(name = "group_link")
+    private Integer link;
+
     public GetAdminSidebarGroupsRespDto toGetAdminSidebarGroupsRespDto() {
         return GetAdminSidebarGroupsRespDto.builder()
                 .id(id)
@@ -70,5 +77,15 @@ public class Group {
                 .cnt(cnt)
 //                .users(dtos)
                 .build();
+    }
+
+    public void putData(GetGroupDto dto) {
+        this.name = dto.getName();
+        this.description = dto.getDescription();
+        this.link = dto.getLink();
+    }
+
+    public void patchStatus(int i) {
+        this.status = i;
     }
 }

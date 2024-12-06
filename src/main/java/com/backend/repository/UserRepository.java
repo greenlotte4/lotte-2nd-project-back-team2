@@ -36,4 +36,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByHp(String hp);
+
+    Page<User> findAllByCompanyAndStatusIsNotOrderByLevelDesc(String number, int i, Pageable pageable);
+
+    Page<User> findAllByCompanyAndNameContainingAndStatusIsNotOrderByLevelDesc(String number, String keyword, int i, Pageable pageable);
+
+    Page<User> findAllByCompanyAndNameContainingAndStatusIsNotAndGroupMappers_Group_IdOrderByLevelDesc(String number, String keyword, int i, Long id, Pageable pageable);
+
+    Page<User> findAllByCompanyAndStatusIsNotAndGroupMappers_Group_IdOrderByLevelDesc(String number, int i, Long id, Pageable pageable);
+
+    Long countByCompany(String company);
 }

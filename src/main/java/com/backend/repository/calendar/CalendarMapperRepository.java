@@ -20,4 +20,5 @@ public interface CalendarMapperRepository extends JpaRepository<CalendarMapper,L
     List<CalendarMapper> findAllByCalendar(Calendar calendar);
 
     List<CalendarMapper> findByUserAndCalendar_StatusIsNot(User user, int i);
+
 }

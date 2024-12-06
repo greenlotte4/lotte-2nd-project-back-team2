@@ -20,4 +20,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Page<Group> findAllByCompanyAndNameContainingAndStatusIsNot(String number, String keyword, int i, Pageable pageable);
 
     Optional<Group> findByIdAndStatusIsNot(Long id, int i);
+
+    Optional<Group> findByNameAndStatusIsNotAndCompany(String name, int i, String company);
 }

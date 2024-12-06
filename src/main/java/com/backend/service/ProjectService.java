@@ -1,21 +1,33 @@
 package com.backend.service;
 
 import com.backend.dto.request.project.PostProjectDTO;
+import com.backend.dto.response.admin.project.GetProjectLeaderDetailDto;
+import com.backend.dto.response.admin.project.GetProjectLeaderDto;
+import com.backend.dto.response.admin.project.GetProjects;
 import com.backend.dto.response.project.GetProjectColumnDTO;
 import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.project.GetProjectTaskDTO;
 import com.backend.dto.response.user.GetUsersAllDto;
+import com.backend.entity.calendar.Calendar;
+import com.backend.entity.calendar.CalendarMapper;
+import com.backend.entity.group.Group;
+import com.backend.entity.group.GroupLeader;
 import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectColumn;
 import com.backend.entity.project.ProjectCoworker;
 import com.backend.entity.project.ProjectTask;
 import com.backend.entity.user.User;
+import com.backend.repository.GroupLeaderRepository;
+import com.backend.repository.GroupRepository;
+import com.backend.repository.UserRepository;
+import com.backend.repository.calendar.CalendarMapperRepository;
 import com.backend.repository.project.ProjectColumnRepository;
 import com.backend.repository.project.ProjectCoworkerRepository;
 import com.backend.repository.project.ProjectRepository;
 import com.backend.repository.project.ProjectTaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +54,10 @@ public class ProjectService {
     private final UserService userService;
     private final ProjectRepository projectRepository;
     private final ProjectCoworkerRepository coworkerRepository;
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
+    private final GroupLeaderRepository groupLeaderRepository;
+    private final CalendarMapperRepository calendarMapperRepository;
     private final ProjectColumnRepository columnRepository;
     private final ProjectTaskRepository taskRepository;
 
@@ -94,6 +110,91 @@ public class ProjectService {
         return null;
     }
 
+    public ResponseEntity<?> getLeaderInfo(String group, String company) {
+        Optional<Group> optGroup = groupRepository.findByNameAndStatusIsNotAndCompany(group,0,company);
+        if(optGroup.isEmpty()) {
+            return ResponseEntity.badRequest().body("정보가 일치하지 않습니다...");
+        }
+        User leader = optGroup.get().getGroupLeader().getUser();
+        List<Project> project = projectRepository.findAllByCoworkers_UserAndStatusIsNot(leader,0);
+        GetProjectLeaderDto projectLeaderDto = GetProjectLeaderDto.builder()
+                .email(leader.getEmail())
+                .name(leader.getName())
+                .level(leader.selectLevelString())
+                .id(leader.getId())
+                .build();
+
+        if(project.isEmpty()){
+            projectLeaderDto.setTitle("없음");
+            projectLeaderDto.setType("없음");
+            projectLeaderDto.setStatus("없음");
+        } else {
+            if (project.size() >= 2) {
+                projectLeaderDto.setTitle(project.get(0).getTitle() + " 외 " + (project.size()-1) + "개");
+            } else {
+                projectLeaderDto.setTitle(project.get(0).getTitle());
+            }
+            projectLeaderDto.setType(project.get(0).selectType());
+            projectLeaderDto.setStatus(project.get(0).selectStatus());
+        }
+        return ResponseEntity.ok(projectLeaderDto);
+    }
+
+    public ResponseEntity<?> getLeaderDetail(Long id) {
+        GetProjectLeaderDetailDto getProjectLeaderDetailDto = new GetProjectLeaderDetailDto();
+        Optional<User> leader = userRepository.findById(id);
+        if(leader.isEmpty()){
+            return ResponseEntity.badRequest().body("로그인 정보가 일치하지 않습니다...");
+        }
+        getProjectLeaderDetailDto.setHp(leader.get().getHp());
+        getProjectLeaderDetailDto.setId(leader.get().getId());
+        getProjectLeaderDetailDto.setAddress(leader.get().getAddr1()+" "+leader.get().getAddr2());
+        getProjectLeaderDetailDto.setName(leader.get().getName());
+        Optional<GroupLeader> groupLeader = groupLeaderRepository.findByUser(leader.get());
+        Group group = groupLeader.get().getGroup();
+        System.out.println("===========ddd=======");
+        System.out.println(groupLeader.get());
+        System.out.println(group);
+        Optional<CalendarMapper> groupCalendar;
+        if(group.getType()==0){
+            groupCalendar = calendarMapperRepository.findByUserAndCalendar_Status(leader.get(),3);
+        } else {
+            groupCalendar = calendarMapperRepository.findByUserAndCalendar_Status(leader.get(),4);
+        }
+        if(groupCalendar.isPresent()){
+            getProjectLeaderDetailDto.setCalendarId(groupCalendar.get().getCalendar().getCalendarId());
+            getProjectLeaderDetailDto.setCalendarName(groupCalendar.get().getCalendar().getName());
+        } else {
+            getProjectLeaderDetailDto.setCalendarId(0L);
+            getProjectLeaderDetailDto.setCalendarName("없음");
+        }
+
+        List<Project> project = projectRepository.findAllByCoworkers_UserAndStatusIsNot(leader.get(),0);
+        if(project.isEmpty()){
+            List<GetProjects> projects = new ArrayList<>();
+            GetProjects proj = GetProjects.builder()
+                    .projectId(0L)
+                    .projectStatus("없음")
+                    .projectTitle("없음")
+                    .build();
+            projects.add(proj);
+            getProjectLeaderDetailDto.setProjects(projects);
+        } else {
+            List<GetProjects> projects = new ArrayList<>();
+            for (Project project1 : project) {
+                GetProjects proj = GetProjects.builder()
+                        .projectId(project1.getId())
+                        .projectStatus(project1.selectStatus())
+                        .projectTitle(project1.getTitle())
+                        .build();
+                projects.add(proj);
+            }
+            getProjectLeaderDetailDto.setProjects(projects);
+        }
+
+        return ResponseEntity.ok(getProjectLeaderDetailDto);
+    }
+
     public ProjectColumn addColumn(GetProjectColumnDTO columnDTO, Long projectId) {
         return columnRepository.save(columnDTO.toEntityAddProject(projectId));
     }
@@ -111,6 +212,4 @@ public class ProjectService {
         }
         return null;
     }
-
-
 }

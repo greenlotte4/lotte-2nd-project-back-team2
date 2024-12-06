@@ -27,7 +27,6 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<?> getUser(){
         List<GetAdminUsersRespDto> users = userService.getUserNotTeamLeader();
-        System.out.println(users);
         return ResponseEntity.ok(users);
     }
 
@@ -38,7 +37,7 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    // 12.01 전체유저 무한스크롤 요청
+    // 12.01 이상훈 전체유저 무한스크롤 요청
     @GetMapping("/users/all")
     public ResponseEntity<?> getAllUser2(
             @RequestParam int page,
@@ -70,7 +69,6 @@ public class UserController {
     public ResponseEntity<?> getAllUsersBySearch(
             @RequestParam String search
     ){
-        System.out.println(search);
         return ResponseEntity.ok().build();
     }
 
@@ -79,6 +77,13 @@ public class UserController {
             @RequestBody PatchAdminUserApprovalDto dto
             ){
         ResponseEntity<?> response = userService.patchUserApproval(dto);
+        return response;
+    }
+
+    @GetMapping("/users/all/cnt")
+    public ResponseEntity<?> getAllUserCnt(){
+        String company = "1246857";
+        ResponseEntity<?> response = userService.getALlUsersCnt(company);
         return response;
     }
 }

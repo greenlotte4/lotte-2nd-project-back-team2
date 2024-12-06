@@ -1,5 +1,6 @@
 package com.backend.repository;
 
+import com.backend.entity.group.Group;
 import com.backend.entity.group.GroupMapper;
 import com.backend.entity.user.User;
 import com.backend.util.Role;
@@ -22,4 +23,10 @@ public interface GroupMapperRepository extends JpaRepository<GroupMapper, Long> 
     List<GroupMapper> findAllByGroup_NameAndUser_LevelOrderByUser_LevelDesc(String team, int i);
 
     GroupMapper findByUser(User user);
+
+    List<GroupMapper> findAllByGroup(Group group);
+
+    Optional<GroupMapper> findByGroupAndUser(Group group, User user);
+
+    List<GroupMapper> findAllByGroupOrderByUser_LevelDesc(Group group);
 }
