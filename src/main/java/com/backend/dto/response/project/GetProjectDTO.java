@@ -1,9 +1,10 @@
 package com.backend.dto.response.project;
 
+import com.backend.entity.project.ProjectColumn;
 import com.backend.entity.project.ProjectCoworker;
 import lombok.*;
 
-import java.util.List;
+import java.util.*;
 
 @Data
 @Builder
@@ -16,10 +17,7 @@ public class GetProjectDTO {
     private int type; // 부서내부, 회사내부, 협력, 공개
     private int status; // 대기중, 진행중, 완료, 삭제
 
-    private List<GetProjectCoworkerDTO> coworkers;
-    private List<GetProjectColumnDTO> columns;
+    private Set<GetProjectCoworkerDTO> coworkers = new HashSet<>();
+    private Set<GetProjectColumnDTO> columns = new TreeSet<>(Comparator.comparing(GetProjectColumnDTO::getPosition));
 
-    public List<ProjectCoworker> getCoworkersEntity() {
-        return coworkers.stream().map(GetProjectCoworkerDTO::toProjectCoworker).toList();
-    }
 }

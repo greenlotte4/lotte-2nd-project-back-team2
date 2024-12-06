@@ -28,6 +28,7 @@ public class ProjectTask {
     private int priority; // 중요도
 
     private int status; // 완료, 미완료
+    private int position;
 
     private LocalDate duedate; // 마감일
 

@@ -1,5 +1,6 @@
 package com.backend.controller;
 
+import com.backend.dto.request.project.PatchCoworkersDTO;
 import com.backend.dto.request.project.PostProjectDTO;
 import com.backend.dto.response.project.GetProjectColumnDTO;
 import com.backend.dto.response.project.GetProjectDTO;
@@ -55,10 +56,14 @@ public class ProjectController {
         ProjectTask task = projectService.saveTask(dto);
         return ResponseEntity.ok().body(task);
     }
-    @PatchMapping("/project/{id}") // 프로젝트 컬럼 생성
-    public ResponseEntity<?> updateCoworker(@PathVariable Long id, @RequestBody GetProjectDTO dto) {
-        Project savedProject = projectService.updateCoworker(dto, id);
-        return ResponseEntity.ok().body(savedProject);
+    @PatchMapping("/project/coworkers") // 프로젝트 컬럼 생성
+    public ResponseEntity<String> updateCoworkers(@RequestBody PatchCoworkersDTO dto) {
+        try {
+            projectService.updateCoworkers(dto);
+            return ResponseEntity.ok("작업자 목록이 성공적으로 수정되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("작업자 목록 수정 중 오류가 발생했습니다.");
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.dto.request.project.PatchCoworkersDTO;
 import com.backend.dto.request.project.PostProjectDTO;
 import com.backend.dto.response.admin.project.GetProjectLeaderDetailDto;
 import com.backend.dto.response.admin.project.GetProjectLeaderDto;
@@ -8,7 +9,6 @@ import com.backend.dto.response.project.GetProjectColumnDTO;
 import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.project.GetProjectTaskDTO;
 import com.backend.dto.response.user.GetUsersAllDto;
-import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.group.Group;
 import com.backend.entity.group.GroupLeader;
@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 
     수정이력
         - 2024/12/04 김주경 - 코드 간편화, 프로젝트 불러오기
+        - 2024/12/05 김주경 - 프로젝트 컬럼 추가, 수정
+        - 2024/12/06 김주경 - 작업자 수정
 
  */
 
@@ -51,11 +53,10 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class ProjectService {
-    private final UserService userService;
+    private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ProjectCoworkerRepository coworkerRepository;
     private final GroupRepository groupRepository;
-    private final UserRepository userRepository;
     private final GroupLeaderRepository groupLeaderRepository;
     private final CalendarMapperRepository calendarMapperRepository;
     private final ProjectColumnRepository columnRepository;
@@ -63,7 +64,7 @@ public class ProjectService {
 
     public Project createProject(PostProjectDTO postDTO, String username) {
 
-        List<GetUsersAllDto> userList = postDTO.getCoworkers();
+        Set<GetUsersAllDto> userList = postDTO.getCoworkers();
         Project project = postDTO.toProject();
 
         userList.forEach(u -> project.addCoworker(ProjectCoworker.builder()
@@ -73,7 +74,7 @@ public class ProjectService {
                 .build()));
 
         project.addCoworker(ProjectCoworker.builder()
-                        .user(userService.getUserByuid(username))
+                        .user(userRepository.findByUid(username).orElseThrow(() -> new IllegalArgumentException(username+"작업자를 찾을 수 없습니다.")))
                         .isOwner(true)
                         .build());
 
@@ -83,7 +84,12 @@ public class ProjectService {
     public Map<String,Object> getAllProjects(String username) {
         Map<String,Object> map = new HashMap<>();
 
-        List<ProjectCoworker> allProjects = coworkerRepository.findByUserAndProjectStatusIsNot(userService.getUserByuid(username), 0);
+        List<ProjectCoworker> allProjects
+                = coworkerRepository.findByUserAndProjectStatusIsNot(
+                        userRepository.findByUid(username)
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException(username+"작업자를 찾을 수 없습니다.")
+                            ), 0);
 
         Map<String, List<ProjectCoworker>> groupedByStatus = allProjects.stream()
                 .collect(Collectors.groupingBy(pc -> {
@@ -94,9 +100,9 @@ public class ProjectService {
                     else return "unknown";
                 }));
 
-        map.put("waiting", groupedByStatus.getOrDefault("waiting", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).toList());
-        map.put("inProgress", groupedByStatus.getOrDefault("inProgress", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).toList());
-        map.put("completed", groupedByStatus.getOrDefault("completed", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).toList());
+        map.put("waiting", groupedByStatus.getOrDefault("waiting", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).collect(Collectors.toSet()));
+        map.put("inProgress", groupedByStatus.getOrDefault("inProgress", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).collect(Collectors.toSet()));
+        map.put("completed", groupedByStatus.getOrDefault("completed", Collections.emptyList()).stream().map(ProjectCoworker::toGetProjectListDTO).collect(Collectors.toSet()));
         map.put("count",allProjects.size());
         return map;
     }
@@ -203,13 +209,30 @@ public class ProjectService {
         return taskRepository.save(taskDTO.toProjectTask());
     }
 
-    public Project updateCoworker(GetProjectDTO dto, Long projectId) {
-        Optional<Project> optProject = projectRepository.findById(projectId);
-        if (optProject.isPresent()) {
-            Project project = optProject.get();
-            project.setCoworkers(dto.getCoworkersEntity());
-            return projectRepository.save(project);
+    public void updateCoworkers(PatchCoworkersDTO dto) {
+        Project project = projectRepository.findById(dto.getProjectId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 프로젝트를 찾을 수 없습니다."));
+
+        if (dto.getRemovedCoworkers() != null) {
+            dto.getRemovedCoworkers().forEach(userId -> {
+                project.getCoworkers().stream()
+                        .filter(coworker -> coworker.getUser().getId().equals(userId))
+                        .findFirst()
+                        .ifPresent(project::removeCoworker);
+            });
         }
-        return null;
+
+        if (dto.getAddedCoworkers() != null) {
+            dto.getAddedCoworkers().forEach(userId -> {
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new IllegalArgumentException("작업자를 찾을 수 없습니다. ID: " + userId));
+                project.addCoworker(ProjectCoworker.builder()
+                        .user(user)
+                        .project(project)
+                        .isOwner(false)
+                        .build());
+            });
+        }
+
     }
 }

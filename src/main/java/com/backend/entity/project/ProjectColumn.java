@@ -1,10 +1,15 @@
 package com.backend.entity.project;
 
 import com.backend.dto.response.project.GetProjectColumnDTO;
+import com.backend.dto.response.project.GetProjectTaskDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,19 +25,21 @@ public class ProjectColumn {
 
     private String title;
     private String color;
+    private int position;
 
     @ManyToOne
     private Project project;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "columnId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProjectTask> tasks;
+    private Set<ProjectTask> tasks = new TreeSet<>(Comparator.comparing(ProjectTask::getPosition));
 
     public GetProjectColumnDTO toGetProjectColumnDTO () {
         return GetProjectColumnDTO.builder()
                 .id(id)
                 .title(title)
                 .color(color)
-                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).toList())
+                .position(position)
+                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).collect(Collectors.toSet()))
                 .build();
     }
 }
