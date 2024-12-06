@@ -17,6 +17,9 @@ public class CardInfo {
     @Column(name = "card_status")
     private int status;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "card_active_status")
     private int activeStatus; // 기본등록카드
 

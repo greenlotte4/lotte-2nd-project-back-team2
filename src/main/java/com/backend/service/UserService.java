@@ -33,13 +33,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -57,6 +55,7 @@ public class UserService {
     private final TermsRepository termsRepository;
     private final CardInfoRepository cardInfoRepository;
     private final JavaMailSenderImpl mailSender;
+    private final PasswordEncoder passwordEncoder;
     @Autowired
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -159,10 +158,11 @@ public class UserService {
     }
 
     public void insertUser(PostUserRegisterDTO dto) {
+        String encodedPwd = passwordEncoder.encode(dto.getPwd());
 
         User entity = User.builder()
                             .uid(dto.getUid())
-                            .pwd(dto.getPwd())
+                            .pwd(encodedPwd)
                             .role(dto.getRole())
                             .grade(dto.getGrade())
                             .email(dto.getEmail())
@@ -171,12 +171,15 @@ public class UserService {
                             .addr1(dto.getAddr1())
                             .country(dto.getCountry())
                             .addr2(dto.getAddr2())
-                            .paymentId(dto.getPaymentId())
+                .status(1)
+                .day(dto.getDay())
+                .company(dto.getCompany())
+                .companyName(dto.getCompanyName())
                             .build();
 
         User user = userRepository.save(entity);
 
-        if("enterprise".equals(user.getGrade())){
+        if(user.getGrade() == 3 ){
             String companyCode = this.makeRandomCode(10);
             user.updateCompanyCode(companyCode);
         }

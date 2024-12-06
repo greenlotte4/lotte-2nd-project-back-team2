@@ -1,16 +1,16 @@
 package com.backend.controller;
 
-import com.backend.dto.request.user.EmailDTO;
-import com.backend.dto.request.user.PaymentInfoDTO;
-import com.backend.dto.request.user.PostUserRegisterDTO;
-import com.backend.dto.request.user.RegisterValidationDTO;
+import com.backend.dto.request.user.*;
 import com.backend.dto.response.user.TermsDTO;
 import com.backend.service.UserService;
+import com.backend.util.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.Console;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -75,12 +75,27 @@ public class RegisterController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody PostUserRegisterDTO dto){
+    public ResponseEntity<?> register(@RequestBody RegisterDTO reqdto){
+        PaymentInfoDTO paymentInfoDTO = reqdto.getPayment();
+        PostUserRegisterDTO dto = reqdto.getUser();
+        String now = LocalDate.now().toString();
+        log.info("회원가입 컨트롤러 "+ paymentInfoDTO);
+        log.info("회원가입 컨트롤러 "+ dto );
 
-        PaymentInfoDTO paymentInfoDTO = dto.getPaymentInfo();
-        paymentInfoDTO.setActiveStatus(1);
-        Long paymentId = userService.insertPayment(paymentInfoDTO);
-
+        Long paymentId = null;
+        if (dto.getGrade()==3 ){
+            dto.setRole(Role.COMPANY);
+            paymentInfoDTO.setActiveStatus(1);
+            dto.setDay(now);
+            paymentId = userService.insertPayment(paymentInfoDTO);
+        }else if (dto.getGrade()==2 ){
+            dto.setRole(Role.USER);
+            dto.setDay(now);
+            paymentInfoDTO.setActiveStatus(1);
+            paymentId = userService.insertPayment(paymentInfoDTO);
+        }else if (dto.getGrade()==0 ){
+            dto.setRole(Role.WORKER);
+        }
         dto.setPaymentId(paymentId);
         userService.insertUser(dto);
 

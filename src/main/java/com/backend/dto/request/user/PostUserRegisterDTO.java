@@ -3,6 +3,9 @@ package com.backend.dto.request.user;
 import com.backend.util.Role;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -19,7 +22,8 @@ public class PostUserRegisterDTO {
     private String addr2;
     private Integer grade; // 결제등급 basic company standard enterprise
     private Role role;
-    private Long paymentId;
-    private PaymentInfoDTO paymentInfo;
-    private String companyCode;
+    private String day;
+    private Long paymentId; //이게뭐지
+    private String company; //회사코드
+    private String companyName; //회사이름
 }
