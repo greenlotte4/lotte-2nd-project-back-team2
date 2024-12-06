@@ -120,13 +120,13 @@ public class ChatController {
     }
 
     @PostMapping("/saveMessage")
-    public ResponseEntity<String> saveMessage(@RequestBody ChatMessageDTO chatMessageDTO) {
+    public ResponseEntity<ChatMessageDocument> saveMessage(@RequestBody ChatMessageDTO chatMessageDTO) {
         log.info("chatMessageDTO = " + chatMessageDTO);
         ChatMessageDocument savedDocument = chatService.saveMessage(chatMessageDTO);
         if (savedDocument != null) {
-            return ResponseEntity.ok("success");
+            return ResponseEntity.ok(savedDocument);
         }
-        return ResponseEntity.ok("failure");
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/getMessage/{roomId}")
@@ -143,7 +143,7 @@ public class ChatController {
     public void sendMessage(@Payload ChatMessageDTO chatMessageDTO) {
 
         ChatMessageDocument chatMessageDocument = chatMessageDTO.toDocument();
-        log.info("chatMessageDocument = " + chatMessageDocument);
+        log.info("전파할 메시지 = " + chatMessageDocument);
 
         // 메시지를 해당 채팅방의 구성원들에게 브로드캐스트
         messagingTemplate.convertAndSend("/topic/chat" + chatMessageDocument.getRoomId(), chatMessageDocument);
