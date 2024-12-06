@@ -324,4 +324,10 @@ public class UserService {
         Page<GetGroupUsersDto> dtos = users.map(User::toGetGroupUsersDto);
         return dtos;
     }
+
+    // 12.06 사용자 아이디로 소속 부서 id 추출
+    public List<Group> getGroupsByUserUid(String uid) {
+        log.info("내 아이디는 받아오나"+uid);
+        return groupMapperRepository.findGroupsByUserUid(uid);
+    }
 }
