@@ -5,16 +5,19 @@ import com.backend.dto.request.project.PostProjectDTO;
 import com.backend.dto.response.project.GetProjectColumnDTO;
 import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.project.GetProjectTaskDTO;
+import com.backend.entity.group.Group;
 import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectColumn;
 import com.backend.entity.project.ProjectTask;
 import com.backend.service.ProjectService;
+import com.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Log4j2
@@ -24,6 +27,7 @@ import java.util.Map;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final UserService userService;
 
     @PostMapping("/project") // 프로젝트 생성
     public ResponseEntity<?> createProject(@RequestBody PostProjectDTO dto, HttpServletRequest request) {
@@ -65,5 +69,12 @@ public class ProjectController {
             return ResponseEntity.status(500).body("작업자 목록 수정 중 오류가 발생했습니다.");
         }
     }
-
+    @GetMapping("/project/user/group") // 로그인한 유저 부서정보 추출
+    public ResponseEntity<?> getUserGroup(HttpServletRequest req){
+        log.info("=====================================================여기 요청 들어오나");
+        String uid = (String) req.getAttribute("username");
+        log.info("uid:"+uid);
+        List<Group> groupList = userService.getGroupsByUserUid(uid);
+        return ResponseEntity.ok(groupList);
+    }
 }

@@ -20,8 +20,8 @@ public class Project { //프로젝트
     private Long id;
 
     private String title;
-    private int type; // 부서내부, 회사내부, 협력, 공개
-    private int status; // 대기중, 진행중, 완료, 삭제
+    private int type; // 1:부서내부 2:회사내부 3:협력 4:팀 5:공개
+    private int status; // 0:삭제 1:대기중 2:진행중 3:완료
 
     @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -31,6 +31,9 @@ public class Project { //프로젝트
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private Set<ProjectColumn> columns = new TreeSet<>(Comparator.comparing(ProjectColumn::getPosition));
+
+    @Version // Optimistic locking을 위한 버전 필드
+    private Long version;
 
     @Column(name = "project_progress")
     private Integer projectProgress;
