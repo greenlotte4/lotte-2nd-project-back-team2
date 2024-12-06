@@ -24,7 +24,6 @@ import java.util.Objects;
 
 @Log4j2
 @RequestMapping("/api/message")
-@CrossOrigin(origins = "http://localhost:8010")
 @RequiredArgsConstructor
 @RestController
 public class ChatController {
@@ -143,10 +142,12 @@ public class ChatController {
     public void sendMessage(@Payload ChatMessageDTO chatMessageDTO) {
 
         ChatMessageDocument chatMessageDocument = chatMessageDTO.toDocument();
-        log.info("전파할 메시지 = " + chatMessageDocument);
+        log.info("Sending message to topic: /topic/chat/" + chatMessageDocument.getRoomId());
 
         // 메시지를 해당 채팅방의 구성원들에게 브로드캐스트
-        messagingTemplate.convertAndSend("/topic/chat" + chatMessageDocument.getRoomId(), chatMessageDocument);
+        messagingTemplate.convertAndSend("/topic/chat/" + chatMessageDocument.getRoomId(), chatMessageDocument);
+
+        log.info("Message sent to topic: /topic/chat/" + chatMessageDocument.getRoomId());
     }
 
 }
