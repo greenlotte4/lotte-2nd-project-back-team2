@@ -4,10 +4,8 @@ import com.backend.dto.chat.UsersWithGroupNameDTO;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.response.GetAdminUsersRespDto;
 import com.backend.dto.response.user.GetUsersAllDto;
-import com.backend.entity.group.Group;
 import com.backend.service.GroupService;
 import com.backend.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -88,5 +86,4 @@ public class UserController {
         ResponseEntity<?> response = userService.getALlUsersCnt(company);
         return response;
     }
-
 }
