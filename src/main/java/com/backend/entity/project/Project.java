@@ -1,10 +1,6 @@
 package com.backend.entity.project;
 
-import com.backend.dto.response.project.GetProjectColumnDTO;
-import com.backend.dto.response.project.GetProjectCoworkerDTO;
-import com.backend.dto.response.admin.project.GetProjectLeaderDto;
 import com.backend.dto.response.project.GetProjectDTO;
-import com.backend.dto.response.project.GetProjectListDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
