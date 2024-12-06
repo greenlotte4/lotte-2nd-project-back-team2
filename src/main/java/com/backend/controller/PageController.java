@@ -72,4 +72,14 @@ public class PageController {
 
         return ResponseEntity.ok(pageDto);
     }
+
+    @GetMapping("/list")
+    public ResponseEntity list(HttpServletRequest request){
+        String uid = (String)request.getAttribute("uid");
+
+        List<Page> pages = pageService.pageList(uid);
+
+        return ResponseEntity.ok().body(pages);
+
+    }
 }

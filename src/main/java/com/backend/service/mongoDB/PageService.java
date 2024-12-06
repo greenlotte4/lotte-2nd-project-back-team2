@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -44,5 +45,10 @@ public class PageService {
             return pageDto;
         }
         return null;
+    }
+
+    public List<Page> pageList(String uid){
+        List<Page> list = pageRepository.findByOwnerUid(uid);
+        return list;
     }
 }
