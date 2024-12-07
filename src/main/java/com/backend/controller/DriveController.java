@@ -1,6 +1,7 @@
 package com.backend.controller;
 
 
+import com.backend.document.drive.FileMogo;
 import com.backend.dto.request.FileRequestDto;
 import com.backend.dto.request.drive.MoveFolderRequest;
 import com.backend.dto.request.drive.NewDriveRequest;
@@ -36,29 +37,35 @@ public class DriveController {
     private final SftpService sftpService;
     private final ThumbnailService thumbnailService;
 
+
+    //드라이브생성 => 제일 큰 폴더
     @PostMapping("/newDrive")
     public void createDrive(@RequestBody NewDriveRequest newDriveRequest,HttpServletRequest request) {
         log.info("New drive request: " + newDriveRequest);
         String uid= (String) request.getAttribute("uid");
         newDriveRequest.setOwner(uid);
-        User currentUser = userService.getUserByuid(newDriveRequest.getOwner());
-        Folder forFolder = folderService.getFolderName(currentUser.getUid());
+        Folder forFolder = folderService.getFolderName(uid);
+
+        //부모폴더생성
         if(forFolder == null) {
             NewDriveRequest rootdrive = NewDriveRequest.builder()
                     .owner(newDriveRequest.getOwner())
-                    .name(currentUser.getUid())
-                    .driveMaster(currentUser.getUid())
-                    .description(currentUser.getUid()+"의 드라이브")
+                    .name(uid)
+                    .type("ROOT")
+                    .driveMaster(uid)
+                    .description(uid+"의 드라이브")
                     .build();
             String rootId =folderService.createRootDrive(rootdrive);
             newDriveRequest.setParentId(rootId);
-            permissionService.addPermission(rootId,currentUser.getUid(),"folder",newDriveRequest.getPermissions());
+            permissionService.addPermission(rootId,uid,"folder",newDriveRequest.getPermissions());
         }else{
             newDriveRequest.setParentId(forFolder.getId());
         }
 
         //폴더생성
-        String forderId = folderService.createDrive(newDriveRequest);
+
+        newDriveRequest.setType("DRIVE");
+        String forderId = folderService.createFolder(newDriveRequest);
 
         //권한설정 저장
 
@@ -66,6 +73,7 @@ public class DriveController {
     }
 
 
+    //드라이브 안의 폴더 생성
     @PostMapping("/newFolder")
     public void createFolder(@RequestBody NewDriveRequest newDriveRequest,HttpServletRequest request) {
         log.info("New drive request: " + newDriveRequest);
@@ -75,12 +83,11 @@ public class DriveController {
 
         FolderDto folderDto = folderService.getParentFolder(newDriveRequest.getParentId());
         newDriveRequest.setParentFolder(folderDto);
-        User currentUser = userService.getUserByuid(newDriveRequest.getOwner());
-
-        String folderId = folderService.createDrive(newDriveRequest);
+        newDriveRequest.setType("FOLDER");
+        String folderId = folderService.createFolder(newDriveRequest);
 
         //권한설정 저장
-        permissionService.addPermission(folderId,currentUser.getUid(),"folder",newDriveRequest.getPermissions());
+        permissionService.addPermission(folderId,uid,"folder",newDriveRequest.getPermissions());
 
 
     }
@@ -235,6 +242,42 @@ public class DriveController {
         }else{
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Folder delete failed");
         }
+    }
+
+
+    @PutMapping("/{type}/{id}/favorite")
+    public ResponseEntity setFavorite(@PathVariable String type,@PathVariable String id ){
+        Map<String, Integer> respone= new HashMap<>();
+        int result=0;
+        if(type.equals("folder")){
+            result= folderService.favorite(id);
+
+        }else if(type.equals("file")){
+
+        }
+        respone.put("result",result);
+
+        return ResponseEntity.ok().body(respone);
+
+    }
+
+    @GetMapping("/favorite")
+    public ResponseEntity isFavorite(HttpServletRequest request){
+        log.info("즐겨찾기 목록!!!");
+        String uid = (String)request.getAttribute("uid");
+        Map<String,Object> response = new HashMap<>();
+
+        List<FolderDto> subFolders = folderService.isFavorite(uid);
+        List<FileRequestDto> files = folderService.isFavoriteFile(uid);
+
+        response.put("files",files);
+        response.put("subFolders", subFolders);
+        response.put("uid",uid);
+        log.info("isFavorite subFolders:"+subFolders);
+        log.info(" isFavorite files:"+files);
+
+
+        return ResponseEntity.ok().body(response);
     }
 
 

@@ -46,8 +46,8 @@ public class PermissionService {
     }
 
     // 권한 추가
-    public Permission addPermission(String id, String userId, String type, List<PermissionType> permissionTypes) {
-        if (permissionTypes == null || permissionTypes.isEmpty()) {
+    public Permission addPermission(String id, String userId, String type, int permissions) {
+        if (permissions == 0){
             throw new IllegalArgumentException("PermissionTypes cannot be null or empty");
         }
 
@@ -56,31 +56,24 @@ public class PermissionService {
                     .orElse(PagePermission.builder()
                             .pageId(id)
                             .userId(userId)
-                            .permission(0) // 기본 권한 없음
+                            .permission(permissions) // 기본 권한 없음
                             .build());
-
-            int combinedPermissions = PermissionType.combinePermissions(permissionTypes); // 여러 권한 조합
-            pagePermission.updatePagePermission(pagePermission.getPermission() | combinedPermissions); // 기존 권한에 추가
             permissionRepository.save(pagePermission);
         } else if (type.equals("folder")) {
             DrivePermission drivePermission = drivePermissionRepository.findByFolderIdAndUserId(id, userId)
                     .orElse(DrivePermission.builder()
                             .folderId(id)
                             .userId(userId)
-                            .permission(0) // 기본 권한 없음
+                            .permission(permissions) // 기본 권한 없음
                             .build());
-            int combinedPermissions = PermissionType.combinePermissions(permissionTypes);
-            drivePermission.updatePermission(combinedPermissions);
             drivePermissionRepository.save(drivePermission);
         } else if (type.equals("file")) {
             DrivePermission drivePermission = drivePermissionRepository.findByFileIdAndUserId(id, userId)
                     .orElse(DrivePermission.builder()
                             .fileId(id)
                             .userId(userId)
-                            .permission(0) // 기본 권한 없음
+                            .permission(permissions) // 기본 권한 없음
                             .build());
-            int combinedPermissions = PermissionType.combinePermissions(permissionTypes);
-            drivePermission.updatePermission(combinedPermissions);
             drivePermissionRepository.save(drivePermission);
         }
         return null;

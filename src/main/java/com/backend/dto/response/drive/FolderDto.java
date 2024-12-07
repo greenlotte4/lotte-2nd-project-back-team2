@@ -20,9 +20,11 @@ public class FolderDto {
     private String id; // 폴더의 고유 ID
     private Folder parent; // 상위 폴더 (최상위 폴더의 경우 NULL)
     private String name; // 폴더 이름
+    private String folderUUID;
     private String ownerId; // 폴더를 소유한 사용자
     private Double order; // 폴더 순서 (같은 부모 폴더 내에서의 정렬)
     private String description; // 폴더 설명
+    private String type;
     private LocalDateTime createdAt; // 폴더 생성 날짜 및 시간
     private LocalDateTime updatedAt; // 폴더 수정 날짜 및 시간
     private List<Folder> children = new ArrayList<>(); // 하위 폴더 목록
