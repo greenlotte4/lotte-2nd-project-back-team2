@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Builder
 @AllArgsConstructor
@@ -23,8 +24,10 @@ public class Folder {
     private String id; // 폴더의 고유 ID
     private String parentId; // 상위 폴더 ID, 최상위 폴더는 null
     private String path; // 폴더 경로
+    private String folderUUID;
     private String name; // 폴더 이름
     private String ownerId;
+    private String type; //Drive, root, folder
     private Double order; // 폴더 순서 (같은 부모 폴더 내에서의 정렬)
     private String description; // 폴더 설명
     @CreationTimestamp
@@ -49,8 +52,10 @@ public class Folder {
                 .parentId(this.parentId)
                 .path(this.path)
                 .name(this.name)
+                .folderUUID(this.folderUUID)
                 .ownerId(this.ownerId)
                 .order(this.order)
+                .type(this.type)
                 .description(this.description)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)

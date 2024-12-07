@@ -21,7 +21,7 @@ public class FileRequestDto {
     private String path; // 실제 저장된 파일 경로 (서버 디렉토리 또는 클라우드 URL)
     private Double file_order; // 파일 순서 (같은 폴더 내에서의 정렬)
     private Long size; // 파일 크기 (바이트 단위)
-    private String owner_uid; // 파일을 업로드한 사용자
+    private String ownerUid; // 파일을 업로드한 사용자
     private Integer version = 1; // 파일 버전 (업데이트 시 증가)
     private int status; // 파일 삭제 여부 (논리적 삭제)
     private int isShared;
@@ -38,7 +38,7 @@ public class FileRequestDto {
                 .originalName(originalName)
                 .savedName(savedName)
                 .path(path)
-                .owner_uid(owner_uid)
+                .ownerUid(ownerUid)
                 .version(version)
                 .status(status)
                 .createdAt(createdAt)
@@ -49,23 +49,5 @@ public class FileRequestDto {
         return fileMogo;
     }
 
-    public static FileRequestDto toDto(FileMogo fileMogo){
-        FileRequestDto fileRequestDto = FileRequestDto.builder()
-                .id(fileMogo.getId())
-                .folderId(fileMogo.getFolderId())
-                .originalName(fileMogo.getOriginalName())
-                .savedName(fileMogo.getSavedName())
-                .path(fileMogo.getPath())
-                .file_order(fileMogo.getFile_order())
-                .size(fileMogo.getSize())
-                .owner_uid(fileMogo.getOwner_uid())
-                .version(fileMogo.getVersion())
-                .status(fileMogo.getStatus())
-                .createdAt(fileMogo.getCreatedAt())
-                .updatedAt(fileMogo.getUpdatedAt())
-                .size(fileMogo.getSize())
-                .folderId(fileMogo.getFolderId())
-                .build();
-        return fileRequestDto;
-    }
+
 }

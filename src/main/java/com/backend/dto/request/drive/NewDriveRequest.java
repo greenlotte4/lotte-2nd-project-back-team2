@@ -18,6 +18,7 @@ public class NewDriveRequest {
     private String owner;        // 소유자 이름
     private String description;  // 설명
     private int order;           // 순서
+    private String type;
     private String driveMaster;  // 드라이브 마스터 이름
     private String masterEmail;  // 드라이브 마스터 이메일
     private List<String> shareUsers; // 공유 사용자 목록
@@ -25,7 +26,7 @@ public class NewDriveRequest {
     private int linkSharing;  // 링크 공유 (0: 허용안함, 1: 허용함)
     private String parentId;
     private int status;
-    private List<PermissionType> permissions;
+    private int permissions;
 
     private FolderDto parentFolder;
 }

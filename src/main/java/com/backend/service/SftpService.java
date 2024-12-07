@@ -1,6 +1,7 @@
 package com.backend.service;
 
 
+import com.backend.dto.response.drive.NewNameResponseDto;
 import com.jcraft.jsch.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -94,15 +95,11 @@ public class SftpService {
 
 
 
-    public String createFolder(String folderName,String username) {
+    public NewNameResponseDto createFolder(String folderName,String username) {
 
-        String remoteDir = "";
-        if(folderName.equals(username)){
-            remoteDir = BASE_SFTP_DIR + username;
-        }else{
-            remoteDir = BASE_SFTP_DIR + username + "/"+ folderName;
+        String folderUUID = UUID.randomUUID().toString();
+        String remoteDir = BASE_SFTP_DIR + username + "/"+ folderUUID;
 
-        }
         log.info("remoteDIR!!! "+remoteDir);
         try {
             JSch jsch = new JSch();
@@ -122,55 +119,23 @@ public class SftpService {
             session.disconnect();
 
             log.info("Folder created and permissions set successfully on SFTP: {}", remoteDir);
-            return remoteDir;
+            return NewNameResponseDto.builder()
+                    .folderUUID(folderUUID)
+                    .folderName(folderName)
+                    .Path(remoteDir)
+                    .build();
         } catch (Exception e) {
             log.error("Error while creating folder: {}", e.getMessage());
             return null;
         }
     }
-
-    public boolean createNestedFoldersWithCommand(String nestedPath) {
-        String remoteDir = BASE_SFTP_DIR + nestedPath; // 절대 경로로 조정
-        String command = String.format("mkdir -p %s", remoteDir);
-
-        try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
-            session.setPassword(SFTP_PASSWORD);
-
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
-
-            ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
-            channelExec.setCommand(command);
-
-            log.info("Executing command: {}", command);
-
-            channelExec.connect();
-            int exitStatus = channelExec.getExitStatus();
-            channelExec.disconnect();
-            session.disconnect();
-
-            if (exitStatus == 0) {
-                log.info("Nested folders created successfully with command: {}", remoteDir);
-                return true;
-            } else {
-                log.error("Failed to create nested folders. Exit status: {}", exitStatus);
-                return false;
-            }
-        } catch (Exception e) {
-            log.error("Failed to create nested folders: {}", e.getMessage());
-            return false;
-        }
-    }
-
 
 
 
   //사용자 생성시 root 폴더 생성 (폴더이름 -> username)
-    public String createRootFolder(String folderName,String username) {
+    public String createRootFolder(String folderName,String uid) {
 
-        String remoteDir = BASE_SFTP_DIR + username;
+        String remoteDir = BASE_SFTP_DIR + uid;
         log.info("remoteDIR!!! "+remoteDir);
         try {
             JSch jsch = new JSch();
@@ -197,8 +162,10 @@ public class SftpService {
         }
     }
 
-    public String createNewFolder(String folderName,String parentPath) {
-        String remoteDir = parentPath +"/"+ folderName;
+    public NewNameResponseDto createNewFolder(String folderName, String parentPath) {
+
+        String folderUUID = UUID.randomUUID().toString();
+        String remoteDir = parentPath +"/"+ folderUUID;
         log.info("remoteDIR!!! "+remoteDir);
         try {
             JSch jsch = new JSch();
@@ -218,7 +185,11 @@ public class SftpService {
             session.disconnect();
 
             log.info("Folder created and permissions set successfully on SFTP: {}", remoteDir);
-            return remoteDir;
+            return  NewNameResponseDto.builder()
+                    .folderUUID(folderUUID)
+                    .folderName(folderName)
+                    .Path(remoteDir)
+                    .build();
         } catch (Exception e) {
             log.error("Error while creating folder: {}", e.getMessage());
             return null;
@@ -431,7 +402,10 @@ public class SftpService {
 
 
     public boolean makeZip(String path, String folderName) {
-        String tmp = BASE_SFTP_DIR + "zip/" + folderName + ".zip";
+        String tmp = "~/"+BASE_SFTP_DIR + "zip/" + folderName + ".zip";
+        log.info("경로!!"+path);
+
+        String remoteDir = "";
         try {
             JSch jsch = new JSch();
             Session session = jsch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
@@ -444,7 +418,7 @@ public class SftpService {
             session.connect();
             log.info("SFTP session connected to host: {}", SFTP_HOST);
 
-            String command = String.format("/usr/bin/zip -r %s %s", tmp, path);
+            String command = String.format("cd %s && /usr/bin/zip -r %s .", path, tmp);
             log.info("Executing command: {}", command);
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");

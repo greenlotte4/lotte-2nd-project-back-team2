@@ -8,6 +8,7 @@ import com.backend.dto.request.drive.RenameRequest;
 import com.backend.dto.response.drive.FolderDto;
 import com.backend.document.drive.FileMogo;
 import com.backend.document.drive.Folder;
+import com.backend.dto.response.drive.NewNameResponseDto;
 import com.backend.repository.drive.FileMogoRepository;
 import com.backend.repository.drive.FolderMogoRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,26 +49,29 @@ public class FolderService {
     private String uploadPath;
 
 
-    public String createDrive(NewDriveRequest request){
+    public String createFolder(NewDriveRequest request){
         String uid = request.getOwner();
-        String makeDrivePath = null;
-        if(request.getParentFolder() !=null){
+        NewNameResponseDto makeDrive = null;
+
+        if(request.getParentFolder() != null){
             FolderDto folderDto = request.getParentFolder();
-           makeDrivePath = sftpService.createNewFolder(request.getName(), folderDto.getPath());
+           makeDrive = sftpService.createNewFolder(request.getName(), folderDto.getPath());
 
         }else{
-            makeDrivePath = sftpService.createFolder(request.getName(),uid);
+            makeDrive = sftpService.createFolder(request.getName(),uid);
 
         }
 
-        log.info("결과!!!!"+makeDrivePath);
+        log.info("결과!!!!"+makeDrive);
 
-        if(makeDrivePath != null){
+        if(makeDrive != null){
            Folder folder =  Folder.builder()
                    .name(request.getName())
-                   .order(request.getOrder() != 0.0 ? request.getOrder() : 0.0) // 널 체크
+                   .order(request.getOrder()==0 ? 0 : (request.getOrder()+1.0)*100) // 널 체크
                    .parentId(request.getParentId())
-                   .path(makeDrivePath)
+                   .path(makeDrive.getPath())
+                   .folderUUID(makeDrive.getFolderUUID())
+                   .type(request.getType())
                    .ownerId(uid)
                    .description(request.getDescription())
                    .status(1)
@@ -85,6 +90,7 @@ public class FolderService {
 
     }
 
+    //사용자 Root 폴더 생성 메서드
     public String createRootDrive(NewDriveRequest request){
 
         String uid = request.getOwner();
@@ -95,8 +101,10 @@ public class FolderService {
         if(makeDrivePath != null){
             Folder folder =  Folder.builder()
                     .name(request.getName())
+                    .folderUUID(null)
                     .order(0.0)
                     .parentId(null)
+                    .type("ROOT")
                     .path(makeDrivePath)
                     .ownerId(uid)
                     .description(request.getDescription())
@@ -160,7 +168,7 @@ public class FolderService {
     public List<FileRequestDto> getFiles(String folderId){
         List<FileMogo> files =fileMogoRepository.findByFolderIdAndStatusIsNot(folderId,0);
         return files.stream()
-                .map(FileRequestDto::toDto)
+                .map(FileMogo::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -234,7 +242,7 @@ public class FolderService {
                     .file_order(savedOrder)
                     .isPinned(isPinned)
                     .isShared(isShared)
-                    .owner_uid(uid)
+                    .ownerUid(uid)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .size(file.getSize())
@@ -299,14 +307,11 @@ public class FolderService {
 
     public void reNameFolder(RenameRequest renameRequest) {
         Folder folder = folderMogoRepository.findById(renameRequest.getId()).orElseThrow();
-        String currentPath = folder.getPath();
-        boolean renameFolder = sftpService.renameFolder(currentPath, renameRequest.getNewPath());
 
-        if(renameFolder){
+        if(folder !=null){
             Query query = new Query(Criteria.where("_id").is(renameRequest.getId()));
             Update update = new Update()
-                    .set("name", renameRequest.getNewName())
-                    .set("path", renameRequest.getNewPath());
+                    .set("name", renameRequest.getNewName());
             mongoTemplate.upsert(query, update, Folder.class);
         }
 
@@ -360,11 +365,13 @@ public class FolderService {
 
     //zip파일 생성
     public String makeZipfolder(String folderId){
-
+        log.info("folderID "+folderId);
         Optional<Folder> opt = folderMogoRepository.findById(folderId);
 
         if(opt.isPresent()){
             Folder folder = opt.get();
+            log.info("folder "+folder);
+
             boolean result = sftpService.makeZip(folder.getPath(), folder.getName());
             if(result){
                 return folder.getName()+".zip";
@@ -373,6 +380,40 @@ public class FolderService {
             return null;
         }
         return null;
+    }
+
+
+    public int  favorite(String id){
+        Folder folder = folderMogoRepository.findById(id).orElseThrow();
+        int isPinned = folder.getIsPinned();
+        int savedPinned = 0;
+        if(isPinned == 0) {
+            savedPinned = 1;
+        }
+        Query query = new Query(Criteria.where("_id").is(id));
+        Update update = new Update()
+                .set("isPinned", savedPinned);
+        mongoTemplate.upsert(query, update, Folder.class);
+        return savedPinned;
+    }
+
+    //조아요 목록
+    public List<FolderDto> isFavorite(String uid){
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndIsPinnedAndStatus(uid,1,1);
+
+        List<FolderDto> folderDtos = folders.stream().map(Folder::toDTO).collect(Collectors.toList());
+
+        return folderDtos;
+    }
+
+    public List<FileRequestDto> isFavoriteFile(String uid){
+
+        List<FileMogo> files = fileMogoRepository.findByOwnerUidAndIsPinnedAndStatusIsNot(uid,1,0);
+
+        return files.stream()
+                .map(FileMogo::toDto)
+                .collect(Collectors.toList());
+
     }
 
 

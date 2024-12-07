@@ -15,8 +15,9 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
     Optional<Folder> findByParentId(String parentId);
     Folder findByName(String name);
 
-    List<Folder> findByOwnerIdAndParentIdAndStatus(String uid, String parentId, int status);
 
+    List<Folder> findByOwnerIdAndParentIdAndStatus(String uid, String parentId, int status);
+    List<Folder> findByOwnerIdAndIsPinnedAndStatus(String uid, int isPinned, int status);
 
 
 }

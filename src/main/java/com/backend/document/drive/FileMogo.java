@@ -1,10 +1,12 @@
 package com.backend.document.drive;
 
+import com.backend.dto.request.FileRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
@@ -31,7 +33,8 @@ public class FileMogo {
 
     private Long size; // 파일 크기 (바이트 단위)
 
-    private String owner_uid; // 파일을 업로드한 사용자
+    @Field("owner_uid")
+    private String ownerUid; // 파일을 업로드한 사용자
 
     private Integer version = 1; // 파일 버전 (업데이트 시 증가)
 
@@ -45,4 +48,24 @@ public class FileMogo {
 
     @LastModifiedDate
     private LocalDateTime updatedAt; // 파일 수정 날짜 및 시간
+
+    public FileRequestDto toDto(){
+        FileRequestDto fileRequestDto = FileRequestDto.builder()
+                .id(this.id)
+                .folderId(this.folderId)
+                .originalName(this.originalName)
+                .savedName(this.savedName)
+                .path(this.path)
+                .file_order(this.file_order)
+                .size(this.size)
+                .ownerUid(this.ownerUid)
+                .version(this.version)
+                .status(this.status)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .size(this.size)
+                .folderId(this.folderId)
+                .build();
+        return fileRequestDto;
+    }
 }
