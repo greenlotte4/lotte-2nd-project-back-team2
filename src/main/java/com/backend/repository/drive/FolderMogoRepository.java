@@ -1,9 +1,11 @@
 package com.backend.repository.drive;
 
 import com.backend.document.drive.Folder;
+import com.backend.entity.page.Page;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.awt.print.Pageable;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,8 +18,11 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
     Folder findByName(String name);
 
 
-    List<Folder> findByOwnerIdAndParentIdAndStatus(String uid, String parentId, int status);
+    List<Folder> findByOwnerIdAndParentIdAndStatusIsNot(String uid, String parentId, int status);
     List<Folder> findByOwnerIdAndIsPinnedAndStatus(String uid, int isPinned, int status);
+    List<Folder> findByOwnerIdAndStatusIsNotOrderByUpdatedAtDesc(String uid, int status);
+
+    List<Folder> findByOwnerIdAndStatus(String uid, int status);
 
 
 }

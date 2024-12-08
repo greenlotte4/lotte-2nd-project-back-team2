@@ -281,4 +281,44 @@ public class DriveController {
     }
 
 
+    @GetMapping("/latest")
+    public ResponseEntity latest(HttpServletRequest request){
+        log.info("최근문서 목록!!!");
+        String uid = (String)request.getAttribute("uid");
+        Map<String,Object> response = new HashMap<>();
+
+        List<FolderDto> subFolders = folderService.latestFolder(uid);
+        List<FileRequestDto> files = folderService.latestFile(uid);
+
+        response.put("files",files);
+        response.put("subFolders", subFolders);
+        response.put("uid",uid);
+        log.info("latest subFolders:"+subFolders);
+        log.info(" latest files:"+files);
+
+
+        return ResponseEntity.ok().body(response);
+    }
+
+
+    @GetMapping("/trash")
+    public ResponseEntity trash(HttpServletRequest request){
+        log.info("휴지통 목록!!!");
+        String uid = (String)request.getAttribute("uid");
+        Map<String,Object> response = new HashMap<>();
+
+        List<FolderDto> subFolders = folderService.trashFolder(uid);
+        List<FileRequestDto> files = folderService.trashFile(uid);
+
+        response.put("files",files);
+        response.put("subFolders", subFolders);
+        response.put("uid",uid);
+        log.info("trash subFolders:"+subFolders);
+        log.info(" trash files:"+files);
+
+
+        return ResponseEntity.ok().body(response);
+    }
+
+
 }
