@@ -13,7 +13,8 @@ public interface FileMogoRepository extends MongoRepository<FileMogo, String> {
     List<FileMogo> findByFolderIdAndStatusIsNot(String folderId,int status);
 
      List<FileMogo> findByOwnerUidAndIsPinnedAndStatusIsNot(String uid, int isPinned,int status);
+     List<FileMogo> findByOwnerUidAndStatusIsNotOrderByUpdatedAtDesc(String uid,int status);
 
-
+    List<FileMogo> findByOwnerUidAndStatus(String uid,int status);
 
 }

@@ -126,7 +126,7 @@ public class FolderService {
 
 
     public List<FolderDto> getFoldersByUid(String uid,String parentId){
-        List<Folder> folders = folderMogoRepository.findByOwnerIdAndParentIdAndStatus(uid,parentId,1);
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndParentIdAndStatusIsNot(uid,parentId,0);
         log.info("폴더 리스트!!!!"+folders);
             List<FolderDto> folderDtos = folders.stream().map(folder -> {
                 FolderDto folderDto = FolderDto.builder()
@@ -415,6 +415,46 @@ public class FolderService {
                 .collect(Collectors.toList());
 
     }
+
+    //최근문서
+    public List<FolderDto> latestFolder(String uid){
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndStatusIsNotOrderByUpdatedAtDesc(uid,0);
+
+        List<FolderDto> folderDtos = folders.stream().map(Folder::toDTO).collect(Collectors.toList());
+
+        return folderDtos;
+    }
+
+    public List<FileRequestDto> latestFile(String uid){
+
+        List<FileMogo> files = fileMogoRepository.findByOwnerUidAndStatusIsNotOrderByUpdatedAtDesc(uid,0);
+
+        return files.stream()
+                .map(FileMogo::toDto)
+                .collect(Collectors.toList());
+
+    }
+
+
+    //휴지통
+    public List<FolderDto> trashFolder(String uid){
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndStatus(uid,0);
+
+        List<FolderDto> folderDtos = folders.stream().map(Folder::toDTO).collect(Collectors.toList());
+
+        return folderDtos;
+    }
+
+    public List<FileRequestDto> trashFile(String uid){
+
+        List<FileMogo> files = fileMogoRepository.findByOwnerUidAndStatus(uid,0);
+
+        return files.stream()
+                .map(FileMogo::toDto)
+                .collect(Collectors.toList());
+
+    }
+
 
 
 }
