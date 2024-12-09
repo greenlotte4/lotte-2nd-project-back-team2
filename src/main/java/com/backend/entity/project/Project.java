@@ -7,8 +7,8 @@ import com.backend.dto.response.project.GetProjectListDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -29,11 +29,11 @@ public class Project { //프로젝트
     @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<ProjectCoworker> coworkers = new HashSet<>();
+    private List<ProjectCoworker> coworkers = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<ProjectColumn> columns = new TreeSet<>(Comparator.comparing(ProjectColumn::getPosition));
+    private List<ProjectColumn> columns = new ArrayList<>();
 
     @Version // Optimistic locking을 위한 버전 필드
     private Long version;
@@ -42,8 +42,8 @@ public class Project { //프로젝트
     private Integer projectProgress;
 
     public void addCoworker(ProjectCoworker coworker) {
-        if(coworkers == null) {coworkers = new HashSet<>();}
-        coworkers.add(coworker);
+        if(this.coworkers == null) {this.coworkers = new ArrayList<>();}
+        this.coworkers.add(coworker);
         coworker.setProject(this);
     }
     public void removeCoworker(ProjectCoworker coworker) {
@@ -57,8 +57,8 @@ public class Project { //프로젝트
                 .title(title)
                 .type(type)
                 .status(status)
-                .columns(columns.stream().map(ProjectColumn::toGetProjectColumnDTO).collect(Collectors.toSet()))
-                .coworkers(coworkers.stream().map(ProjectCoworker::toGetCoworkerDTO).collect(Collectors.toSet()))
+                .columns(columns.stream().map(ProjectColumn::toGetProjectColumnDTO).toList())
+                .coworkers(coworkers.stream().map(ProjectCoworker::toGetCoworkerDTO).toList())
                 .build();
     }
 
