@@ -34,9 +34,6 @@ public class Project { //프로젝트
     @ToString.Exclude
     private List<ProjectColumn> columns = new ArrayList<>();
 
-    @Version // Optimistic locking을 위한 버전 필드
-    private Long version;
-
     @Column(name = "project_progress")
     private Integer projectProgress;
 
