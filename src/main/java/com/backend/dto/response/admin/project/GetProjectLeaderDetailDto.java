@@ -18,6 +18,8 @@ public class GetProjectLeaderDetailDto {
     private String calendarName;
     private Long calendarId;
     private List<GetProjects> projects;
+    private String level;
+    private List<String> groupsNames;
 }
 
 

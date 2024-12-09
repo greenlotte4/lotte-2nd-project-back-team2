@@ -26,24 +26,22 @@ public class AdminProjectController {
     private final GroupService groupService;
     private final ProjectService projectService;
 
-    @GetMapping("/project")
+    @GetMapping("/projects")
     public ResponseEntity<?> getAdminProject(
         @RequestParam String group,
         HttpServletRequest req
     ) {
-        Map<String, Object> map = new HashMap<>();
         String company = "1246857";
-        ResponseEntity<?> response = projectService.getLeaderInfo(group,company);
-        GetProjectLeaderDto leaderDto = (GetProjectLeaderDto) response.getBody();
-        map.put("leader", leaderDto);
-        return ResponseEntity.ok(map);
+        ResponseEntity<?> response = projectService.getProjects(company,group);
+
+        return response;
     }
 
-    @GetMapping("/project/leader")
-    public ResponseEntity<?> getAdminProjectLeader(
+    @GetMapping("/project/columns")
+    public ResponseEntity<?> getAdminProjectColumns(
             @RequestParam Long id
     ){
-        ResponseEntity<?> response = projectService.getLeaderDetail(id);
+        ResponseEntity<?> response = projectService.getAdminProjectColumns(id);
         return response;
     }
 }

@@ -94,6 +94,9 @@ public class User {
     @Column(name = "join_date")
     private LocalDate joinDate;
 
+    @Column(name = "outsourcing_id")
+    private Long outsourcingId;
+
     @OneToOne(fetch = FetchType.LAZY, mappedBy = "user")
     private ProfileImg profileImg;
 
