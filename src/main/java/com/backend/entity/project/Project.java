@@ -1,14 +1,12 @@
 package com.backend.entity.project;
 
-import com.backend.dto.response.admin.project.GetProjectLeaderDto;
 import com.backend.dto.response.admin.project.GetProjects;
 import com.backend.dto.response.project.GetProjectDTO;
 import com.backend.dto.response.project.GetProjectListDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -31,21 +29,31 @@ public class Project { //프로젝트
     @ToString.Exclude
     private List<ProjectCoworker> coworkers = new ArrayList<>();
 
+    @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<ProjectColumn> columns = new ArrayList<>();
+
+    @Version // Optimistic locking을 위한 버전 필드
+    private Long version;
 
     @Column(name = "project_progress")
     private Integer projectProgress;
 
     public void addCoworker(ProjectCoworker coworker) {
-        if(this.coworkers == null) {this.coworkers = new ArrayList<>();}
-        this.coworkers.add(coworker);
+        if(coworkers == null) {coworkers = new ArrayList<>();}
+        coworkers.add(coworker);
         coworker.setProject(this);
     }
     public void removeCoworker(ProjectCoworker coworker) {
         coworkers.remove(coworker);
         coworker.setProject(null);
+    }
+
+    public void addColumn(ProjectColumn column) {
+        if(columns == null) {columns = new ArrayList<>();}
+        columns.add(column);
+        column.setProject(this);
     }
 
     public GetProjectDTO toGetProjectDTO() {

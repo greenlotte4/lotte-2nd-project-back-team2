@@ -1,12 +1,12 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectSubTaskDTO;
 import com.backend.dto.response.project.GetProjectTaskDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,8 +20,11 @@ public class ProjectTask {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "column_id")
-    private Long columnId;
+    @Setter
+    @ToString.Exclude
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "column_id")
+    private ProjectColumn column;
 
     private String title; // 할일
     private String content; // 세부사항
@@ -33,10 +36,10 @@ public class ProjectTask {
     private LocalDate duedate; // 마감일
 
     @OneToMany
-    private List<ProjectSubTask> subTasks;
+    private List<ProjectSubTask> subTasks = new ArrayList<>();
 
     @OneToMany
-    private List<ProjectComment> comments;
+    private List<ProjectComment> comments = new ArrayList<>();
 
 //    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
 //    private List<TaskTag> tags = new ArrayList<>();
@@ -44,12 +47,23 @@ public class ProjectTask {
     public GetProjectTaskDTO toGetProjectTaskDTO() {
         return GetProjectTaskDTO.builder()
                 .id(id)
-                .columnId(columnId)
+                .columnId(column.getId())
                 .title(title)
                 .content(content)
                 .priority(priority)
                 .status(status)
                 .duedate(duedate)
                 .build();
+    }
+
+    public void addSubTask(ProjectSubTask subtask) {
+        if (subTasks == null) {subTasks = new ArrayList<>();}
+        subTasks.add(subtask);
+        subtask.setTask(this);
+    }
+    public void addComment(ProjectComment comment) {
+        if (comments == null) {comments = new ArrayList<>();}
+        comments.add(comment);
+        comment.setTask(this);
     }
 }

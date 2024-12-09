@@ -4,7 +4,6 @@ import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectColumn;
 import lombok.*;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @Builder
@@ -17,7 +16,7 @@ public class GetProjectColumnDTO {
     private String color;
     private int position;
 
-    private Set<GetProjectTaskDTO> tasks;
+    private List<GetProjectTaskDTO> tasks;
 
     public ProjectColumn toEntityAddProject(Long projectId) {
         return ProjectColumn.builder()
@@ -26,6 +25,15 @@ public class GetProjectColumnDTO {
                 .color(color)
                 .position(position)
                 .project(Project.builder().id(projectId).build())
+                .build();
+    }
+    public ProjectColumn toEntity() {
+        return ProjectColumn.builder()
+                .id(id)
+                .title(title)
+                .color(color)
+                .position(position)
+                .tasks(tasks.stream().map(GetProjectTaskDTO::toProjectTask).toList())
                 .build();
     }
 }

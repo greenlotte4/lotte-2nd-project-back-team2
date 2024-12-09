@@ -15,8 +15,11 @@ public class ProjectSubTask { //Task 내부 체크리스트
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "task_id")
-    private Long taskId;
+    @ToString.Exclude
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "task_id")
+    private ProjectTask task;
 
     private boolean isChecked; // 리스트 체크 여부
     private String name; // 이름
