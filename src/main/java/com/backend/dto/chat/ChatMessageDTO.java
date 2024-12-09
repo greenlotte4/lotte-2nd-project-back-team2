@@ -1,10 +1,8 @@
 package com.backend.dto.chat;
 
-import com.backend.document.chat.ChatMemberDocument;
 import com.backend.document.chat.ChatMessageDocument;
 import jakarta.persistence.Id;
 import lombok.*;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 

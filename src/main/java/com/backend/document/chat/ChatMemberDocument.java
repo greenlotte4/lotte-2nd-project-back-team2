@@ -27,6 +27,8 @@ public class ChatMemberDocument {
     private List<ChatMemberDocument> frequent_members = new ArrayList<>();
     private List<String> roomIds = new ArrayList<>();
 
+    private List<ChatMapperDocument> chatMappers;
+
     public ChatMemberDTO toDTO() {
         return ChatMemberDTO.builder()
                 .id(this.id)

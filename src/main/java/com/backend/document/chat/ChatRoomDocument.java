@@ -27,6 +27,8 @@ public class ChatRoomDocument {
     private List<String> members;  // 채팅방 구성원 uid
     private LocalDateTime lastUpdated; // 마지막으로 업데이트된 시간
 
+    private List<ChatMapperDocument> chatMappers;
+
     public ChatRoomDTO toDTO() {
         return ChatRoomDTO.builder()
                 .id(this.id)

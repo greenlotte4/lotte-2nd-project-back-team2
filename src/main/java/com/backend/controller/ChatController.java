@@ -2,9 +2,11 @@ package com.backend.controller;
 
 import com.backend.document.chat.ChatMemberDocument;
 import com.backend.document.chat.ChatMessageDocument;
+import com.backend.document.chat.ChatResponseDocument;
 import com.backend.document.chat.ChatRoomDocument;
 import com.backend.dto.chat.ChatMessageDTO;
 import com.backend.dto.chat.ChatRoomDTO;
+import com.backend.dto.chat.UnreadCountDTO;
 import com.backend.entity.user.User;
 import com.backend.service.ChatService;
 import com.backend.service.GroupService;
@@ -18,8 +20,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 
 @Log4j2
@@ -82,6 +84,12 @@ public class ChatController {
         }
     }
 
+    @DeleteMapping("/quitRoom")
+    public ResponseEntity<?> quitRoom(@RequestParam String selectedRoomId, @RequestParam String uid) {
+        chatService.deleteChatMember(selectedRoomId, uid);
+        return null;
+    }
+
     @PatchMapping("/frequentRoom")
     public ResponseEntity<?> updateFrequent(@RequestBody ChatRoomDTO chatRoomDTO) {
         log.info("chatRoomDTO : " + chatRoomDTO);
@@ -99,7 +107,7 @@ public class ChatController {
         log.info("uid = " + uid);
         ChatMemberDocument chatMemberDocument = chatService.findChatMember(uid);
         log.info("chatMemberDocument = " + chatMemberDocument);
-        return ResponseEntity.ok(Objects.requireNonNullElse(chatMemberDocument.toDTO(), "error"));
+        return ResponseEntity.ok(chatMemberDocument);
     }
 
     @PatchMapping("/frequentMembers")
@@ -128,14 +136,52 @@ public class ChatController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/getMessage/{roomId}")
-    public ResponseEntity<?> getMessage(@PathVariable("roomId") String roomId) {
-        log.info("roomId = " + roomId);
-        List<ChatMessageDTO> chatMessageDTOS = chatService.getAllMessagesByChatRoomId(roomId);
-        if (!chatMessageDTOS.isEmpty()) {
-            return ResponseEntity.ok(chatMessageDTOS);
+    @GetMapping("/getMessage")
+    public ChatResponseDocument getMessages(
+            @RequestParam String chatRoomId,
+            @RequestParam(required = false) String before // ISO 8601 형식의 timestamp
+    ) {
+        log.info("selectedRoomId = " + chatRoomId + " before = " + before);
+        List<ChatMessageDocument> messages;
+        boolean hasMore;
+        if (before != null) {
+            LocalDateTime beforeTimestamp = LocalDateTime.parse(before);
+            messages = chatService.getOlderMessages(chatRoomId, beforeTimestamp);
+            hasMore = messages.size() == ChatService.PAGE_SIZE;
+            log.info("messages = " + messages);
+        } else {
+            messages = chatService.getLatestMessages(chatRoomId);
+            hasMore = messages.size() == ChatService.PAGE_SIZE;
+            log.info("messages = " + messages);
         }
-        return ResponseEntity.noContent().build();
+        return ChatResponseDocument.builder()
+                .messages(messages)
+                .hasMore(hasMore)
+                .build();
+    }
+
+    // 읽지 않은 메시지 수 조회
+    @GetMapping("/unreadCount")
+    public UnreadCountDTO getUnreadCount(
+            @RequestParam String uid,
+            @RequestParam String chatRoomId
+    ) {
+        log.info("check chatRoomId = " + chatRoomId + " uid = " + uid);
+        long count = chatService.getUnreadMessageCount(uid, chatRoomId);
+        return UnreadCountDTO.builder()
+                .unreadCount(count)
+                .build();
+    }
+
+    // 읽음 상태 업데이트
+    @PostMapping("/markAsRead")
+    public void markAsRead(
+            @RequestParam String uid,
+            @RequestParam String chatRoomId,
+            @RequestParam LocalDateTime readTimestamp // ISO 8601 형식
+    ) {
+        log.info("ttttttt uid = " + uid + " chatRoomId = " + chatRoomId + " readTimestamp = " + readTimestamp);
+        chatService.markAsRead(uid, chatRoomId, readTimestamp);
     }
 
     @MessageMapping("/chat.sendMessage")
@@ -149,5 +195,7 @@ public class ChatController {
 
         log.info("Message sent to topic: /topic/chat/" + chatMessageDocument.getRoomId());
     }
+
+
 
 }
