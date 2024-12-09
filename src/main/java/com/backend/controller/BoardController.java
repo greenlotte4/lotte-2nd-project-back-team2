@@ -14,20 +14,29 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
 
-
     public BoardController(BoardService boardService) {
         this.boardService = boardService;
     }
 
+    // 전체 게시판 조회
     @GetMapping("/boards")
     public ResponseEntity<List<BoardDTO>> getAllBoards() {
-        return ResponseEntity.ok(boardService.getAllBoards());
+        List<BoardDTO> boards = boardService.getAllBoards();
+        return ResponseEntity.ok(boards);
+    }
+
+    // 상태별 게시판 조회
+    @GetMapping("/boards/status/{status}")
+    public ResponseEntity<List<Board>> getBoardsByStatus(@PathVariable int status) {
+        List<Board> boards = boardService.getBoardsByStatus(status);
+        return ResponseEntity.ok(boards);
     }
 
 
-    @GetMapping("/boards/status/{status}")
-    public ResponseEntity<List<Board>> getBoardsByStatus(@PathVariable int status) {
-        return ResponseEntity.ok(boardService.getBoardsByStatus(status));
+    @GetMapping("/boards/group/{groupId}")
+    public ResponseEntity<List<Board>> getBoardsByGroup(@PathVariable Long groupId) {
+        List<Board> boards = boardService.getBoardsByGroup(groupId);
+        return ResponseEntity.ok(boards);
     }
 
     // 게시판 생성
@@ -35,17 +44,5 @@ public class BoardController {
     public ResponseEntity<Board> createBoard(@RequestBody Board board) {
         Board newBoard = boardService.createBoard(board);
         return ResponseEntity.ok(newBoard);
-    }
-
-    // 부서별 게시판 조회
-    @GetMapping("/boards/group/{groupId}")
-    public ResponseEntity<Board> getBoardByGroup(@PathVariable Long groupId) {
-        return ResponseEntity.ok(boardService.getBoardByGroup(groupId));
-    }
-
-    @GetMapping("/favorites")
-    public ResponseEntity<List<BoardDTO>> getFavoriteBoards() {
-        List<BoardDTO> favoriteBoards = boardService.getAllBoards();
-        return ResponseEntity.ok(favoriteBoards);
     }
 }

@@ -7,12 +7,13 @@ package com.backend.entity.community;
 
 import com.backend.dto.community.BoardDTO;
 import com.backend.entity.group.Group;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Getter
-@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,8 +27,8 @@ public class Board extends BaseTimeEntity{
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Group group;
-
 
     @Column(nullable = false, unique = true)
     private String boardName; // 게시판 이름 (예: 공지사항, 자유게시판 등)
@@ -36,6 +37,12 @@ public class Board extends BaseTimeEntity{
 
     @Column(name = "favorite_Board", nullable = false)
     private boolean favoriteBoard; //즐겨찾기
+
+    @Column(name = "company_code")
+    private String company; // 회사 코드
+
+    @Column(name = "board_type")
+    private int boardType; // 게시판 유형 1 공통게시판 2 부서별게시판
 
     // Board 엔티티의 DTO 변환 메서드
     public BoardDTO toDTO() {
@@ -50,5 +57,9 @@ public class Board extends BaseTimeEntity{
                 .updatedAt(this.getUpdatedAt()) // BaseTimeEntity의 필드
                 .build();
     }
+    public Board(Long boardId) {
+        this.boardId = boardId;
+    }
 
 }
+

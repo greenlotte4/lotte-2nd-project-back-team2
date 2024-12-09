@@ -9,6 +9,7 @@ package com.backend.service;
 import com.backend.dto.community.BoardDTO;
 import com.backend.entity.community.Board;
 import com.backend.repository.community.BoardRepository;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,16 +26,21 @@ public class BoardService {
     public List<BoardDTO> getAllBoards() {
         return boardRepository.findAllByOrderByBoardNameAsc()
                 .stream()
-                .map(board -> new BoardDTO(
-                        board.getBoardId(),
-                        board.getStatus(),
-                        board.getGroup() != null ? board.getGroup().getId() : null,
-                        board.getBoardName(),
-                        board.getDescription(),
-                        board.isFavoriteBoard(),
-                        board.getCreatedAt(),
-                        board.getUpdatedAt()
-                ))
+                .map(board -> {
+                    if (board.getGroup() != null) {
+                        Hibernate.initialize(board.getGroup()); // 명시적 초기화
+                    }
+                    return new BoardDTO(
+                            board.getBoardId(),
+                            board.getStatus(),
+                            board.getGroup() != null ? board.getGroup().getId() : null,
+                            board.getBoardName(),
+                            board.getDescription(),
+                            board.isFavoriteBoard(),
+                            board.getCreatedAt(),
+                            board.getUpdatedAt()
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -51,9 +57,10 @@ public class BoardService {
 
 
     // 부서별 게시판 조회
-    public Board getBoardByGroup(Long groupId) {
-        return boardRepository.findByGroup_Id(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 부서에 게시판이 존재하지 않습니다."));
+    public List<Board> getBoardsByGroup(Long groupId) {
+        System.out.println("Received groupId: " + groupId);
+        List<Board> boards = boardRepository.findByGroup_Id(groupId);
+        System.out.println("Query result: " + boards);
+        return boards;
     }
-
 }

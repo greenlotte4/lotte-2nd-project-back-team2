@@ -16,11 +16,10 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @ToString
-@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BoardDTO {
 
     private Long boardId;
@@ -49,3 +48,4 @@ public class BoardDTO {
     }
 
 }
+

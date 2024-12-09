@@ -15,11 +15,11 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 @Getter
+@Setter
 @Entity
 
 public class Post extends BaseTimeEntity{
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     @Column(name = "post_id")
     private Long postId;
 
@@ -29,19 +29,22 @@ public class Post extends BaseTimeEntity{
     private String content;
 
     @Column(name = "comment_count")
-    private int commentCount;
+    @Builder.Default
+    private int commentCount = 0;
 
     @Column(name = "file_count")
-    private int fileCount;
-
-    private int hit;
+    @Builder.Default
+    private int fileCount = 0;
+    @Builder.Default
+    private int hit=0;
 
     private String writer;
 
     private String regip;
 
     @Column(nullable = false)
-    private boolean favoritePost; //즐겨찾기
+    @Builder.Default
+    private boolean favoritePost = false; //즐겨찾기
 
     private boolean isMandatory; // 필독 여부
 
@@ -52,5 +55,7 @@ public class Post extends BaseTimeEntity{
     @ManyToOne(fetch = FetchType.LAZY) // 작성자는 하나의 사용자
     @JoinColumn(name = "user_id", nullable = false) // 외래 키
     private User user; // 작성자 정보
+
+
 
 }
