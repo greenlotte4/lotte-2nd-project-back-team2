@@ -1,4 +1,5 @@
 package com.backend.service;
+import com.backend.document.user.AttendanceTime;
 import com.backend.dto.chat.UsersWithGroupNameDTO;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.request.user.EmailDTO;
@@ -16,6 +17,7 @@ import com.backend.entity.user.User;
 import com.backend.repository.GroupMapperRepository;
 import com.backend.repository.GroupRepository;
 import com.backend.repository.UserRepository;
+import com.backend.repository.user.AttendanceTimeRepository;
 import com.backend.repository.user.CardInfoRepository;
 import com.backend.repository.user.TermsRepository;
 import com.backend.util.Role;
@@ -31,12 +33,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -56,6 +62,7 @@ public class UserService {
     private final CardInfoRepository cardInfoRepository;
     private final JavaMailSenderImpl mailSender;
     private final PasswordEncoder passwordEncoder;
+    private final AttendanceTimeRepository attendanceTimeRepository;
     @Autowired
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -348,5 +355,19 @@ public class UserService {
         }else {
             return true;
         }
+    }
+
+    public ResponseEntity<?> goToWork(String uid, LocalDateTime start) {
+        LocalDate date = LocalDate.now();
+        LocalTime checkInTime = LocalTime.now();
+        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(uid, date);
+        if (optAttendance.isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 출근 기록이 있습니다.");
+        }
+        AttendanceTime.builder()
+                .userId(uid)
+                .checkInTime(checkInTime)
+                .build();
+        return null;
     }
 }
