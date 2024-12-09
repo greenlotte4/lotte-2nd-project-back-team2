@@ -3,6 +3,7 @@ package com.backend.controller;
 
 import com.backend.document.drive.FileMogo;
 import com.backend.dto.request.FileRequestDto;
+import com.backend.dto.request.drive.DeletedRequest;
 import com.backend.dto.request.drive.MoveFolderRequest;
 import com.backend.dto.request.drive.NewDriveRequest;
 import com.backend.dto.request.drive.RenameRequest;
@@ -11,12 +12,16 @@ import com.backend.document.drive.Folder;
 import com.backend.dto.response.drive.FolderResponseDto;
 import com.backend.entity.user.User;
 import com.backend.service.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
@@ -166,11 +171,10 @@ public class DriveController {
         String id = renameRequest.getId();
         String type = renameRequest.getType();
         String newName = renameRequest.getNewName();
-        System.out.println("ID: " + id + ", Type: " + type + ", New Name: " + newName);
+        log.info("ID: " + id + ", Type: " + type + ", New Name: " + newName);
 
         if(type.equals("folder")){
             folderService.reNameFolder(renameRequest);
-
         }else if(type.equals("file")){
             folderService.reNameFile(id, newName);
         }
@@ -201,17 +205,41 @@ public class DriveController {
     // 파일 업로드 처리
     @PostMapping("/upload/{folderId}")
     public ResponseEntity<?> uploadFiles( @PathVariable String folderId,
-                                          @RequestParam("file") List<MultipartFile> files,
+                                          @RequestParam("files") List<MultipartFile> files,
+                                          @RequestParam("relativePaths") String relativePathsJson, // JSON 문자열로 받아옴
                                           @RequestParam("maxOrder") double maxOrder,
                                           @RequestParam("uid") String uid
     )  {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> relativePaths = null;
+        try {
+            relativePaths = objectMapper.readValue(relativePathsJson, new TypeReference<List<String>>() {});
 
-        log.info("Upload files"+files);
-        log.info("folderId:"+folderId);
+            log.info("Upload files"+files);
+            log.info("folderId:"+folderId);
+            log.info("relativePaths:"+relativePaths);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
 
-        folderService.uploadFiles(files,folderId,maxOrder,uid);
 
+
+//        try {
+//            folderService.uploadFiles(files, folderId, maxOrder, uid);
+//            return ResponseEntity.ok("파일 업로드 성공");
+//        } catch (MaxUploadSizeExceededException e) {
+//            log.error("파일 크기 초과: {}", e.getMessage());
+//            return ResponseEntity
+//                    .status(HttpStatus.BAD_REQUEST)
+//                    .body("파일 크기가 허용된 최대 크기를 초과했습니다.");
+//        } catch (Exception e) {
+//            log.error("파일 업로드 중 오류 발생: {}", e.getMessage());
+//            return ResponseEntity
+//                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("파일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.");
+//        }
         return null;
+
     }
 
     //zip파일 생성하기
@@ -230,12 +258,12 @@ public class DriveController {
     }
 
 
-    //폴더 삭제
-    @DeleteMapping("/folder/delete/{folderId}")
-    public ResponseEntity deleteFolder(@PathVariable String folderId,@RequestParam String path){
+    //폴더 삭제(status 변경만)
+    @DeleteMapping("/{type}/delete/{Id}")
+    public ResponseEntity deleteFolder(@PathVariable String Id,@PathVariable String type ,@RequestParam String path){
 
-        log.info("Delete folder:"+folderId+" path : "+path);
-        boolean result = folderService.goToTrash(folderId,"folder");
+        log.info("Delete folder:"+Id+" path : "+path);
+        boolean result = folderService.goToTrash(Id,type);
 
         if(result){
             return ResponseEntity.ok().body("Folder deleted successfully");
@@ -245,16 +273,30 @@ public class DriveController {
     }
 
 
+    @DeleteMapping("/selected/delete")
+    public ResponseEntity deleteSelectedFolder(@RequestBody DeletedRequest deletedRequest){
+        log.info("Delete selected folder:"+deletedRequest);
+        try {
+            folderService.seletedDeleted(deletedRequest);
+            return ResponseEntity.ok("Selected folders and files deleted successfully");
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid request: {}", ex.getMessage());
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Error while deleting folders or files", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete selected items");
+        }
+    }
+
+
     @PutMapping("/{type}/{id}/favorite")
     public ResponseEntity setFavorite(@PathVariable String type,@PathVariable String id ){
         Map<String, Integer> respone= new HashMap<>();
         int result=0;
-        if(type.equals("folder")){
-            result= folderService.favorite(id);
+            result= folderService.favorite(id,type);
 
-        }else if(type.equals("file")){
 
-        }
+
         respone.put("result",result);
 
         return ResponseEntity.ok().body(respone);
@@ -318,6 +360,22 @@ public class DriveController {
 
 
         return ResponseEntity.ok().body(response);
+    }
+
+    //폴더 복구,
+    @DeleteMapping("/{type}/restore/{id}")
+    public ResponseEntity restore(@PathVariable String type,@PathVariable String id){
+        log.info("복구 로직 시작"+type+"Id "+id);
+        boolean result = folderService.restore( type,id);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @DeleteMapping("/{type}/permanent/{id}")
+    public ResponseEntity Permanent(@PathVariable String type,@PathVariable String id){
+        log.info("삭제 로직 시작"+type+"Id "+id);
+        boolean result = folderService.delete(type,id);
+        return ResponseEntity.ok().body(result);
     }
 
 

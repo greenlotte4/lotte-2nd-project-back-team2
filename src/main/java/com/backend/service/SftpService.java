@@ -315,14 +315,14 @@ public class SftpService {
             channelSftp.connect();
 
             channelSftp.rename(currentPath, newPath);
-            System.out.println("폴더 이름이 성공적으로 변경되었습니다.");
+            log.info("폴더 이름이 성공적으로 변경되었습니다.");
 
             // 연결 종료
             channelSftp.disconnect();
             session.disconnect();
             return true;
         } catch (JSchException | SftpException e) {
-            System.err.println("폴더 이름 변경 실패: " + e.getMessage());
+            log.error("폴더 이름 변경 실패: " + e.getMessage());
             return false;
         }
     }
@@ -341,13 +341,40 @@ public class SftpService {
             channelExec.setCommand(command);
             channelExec.connect();
 
-            System.out.println("폴더와 하위 파일이 모두 삭제되었습니다.");
+            log.info("폴더와 하위 파일이 모두 삭제되었습니다.");
 
             channelExec.disconnect();
             session.disconnect();
             return true;
         } catch (JSchException e ) {
-            System.err.println("폴더 삭제 실패: " + e.getMessage());
+            log.error("폴더 삭제 실패: " + e.getMessage());
+            return false;
+        }
+
+    }
+
+    public boolean thumbnailDelete(String savedName){
+        String path = BASE_SFTP_DIR+"thumbnails/"+savedName+".jpg";
+        try {
+            // SFTP 연결 설정
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
+            session.setPassword(SFTP_PASSWORD);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
+
+            ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
+            String command = "rm -rf " + path;
+            channelExec.setCommand(command);
+            channelExec.connect();
+
+            log.info("썸네일 삭제완료");
+
+            channelExec.disconnect();
+            session.disconnect();
+            return true;
+        } catch (JSchException e ) {
+            log.error("폴더 삭제 실패: " + e.getMessage());
             return false;
         }
 

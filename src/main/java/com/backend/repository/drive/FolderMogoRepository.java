@@ -20,9 +20,10 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
 
     List<Folder> findByOwnerIdAndParentIdAndStatusIsNot(String uid, String parentId, int status);
     List<Folder> findByOwnerIdAndIsPinnedAndStatus(String uid, int isPinned, int status);
-    List<Folder> findByOwnerIdAndStatusIsNotOrderByUpdatedAtDesc(String uid, int status);
+    List<Folder> findByOwnerIdAndParentIdIsNotNullAndStatusIsNotOrderByUpdatedAtDesc(String uid, int status);
 
     List<Folder> findByOwnerIdAndStatus(String uid, int status);
 
+    List<Folder> findAllByParentId(String parentId);
 
 }

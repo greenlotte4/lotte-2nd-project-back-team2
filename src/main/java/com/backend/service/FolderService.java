@@ -2,6 +2,7 @@ package com.backend.service;
 
 
 import com.backend.dto.request.FileRequestDto;
+import com.backend.dto.request.drive.DeletedRequest;
 import com.backend.dto.request.drive.MoveFolderRequest;
 import com.backend.dto.request.drive.NewDriveRequest;
 import com.backend.dto.request.drive.RenameRequest;
@@ -11,6 +12,8 @@ import com.backend.document.drive.Folder;
 import com.backend.dto.response.drive.NewNameResponseDto;
 import com.backend.repository.drive.FileMogoRepository;
 import com.backend.repository.drive.FolderMogoRepository;
+import com.mongodb.client.result.UpdateResult;
+import com.mongodb.internal.bulk.UpdateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,10 +27,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -268,7 +268,11 @@ public class FolderService {
                 log.error("임시 파일 생성 또는 전송 중 오류 발생: {}", e.getMessage());
             } finally {
                 if (tempFile != null && tempFile.exists()) {
-                    tempFile.delete(); // 임시 파일 삭제
+                    if (tempFile.delete()) {
+                        log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
+                    } else {
+                        log.warn("임시 파일 삭제 실패: {}", tempFile.getAbsolutePath());
+                    }
                 }
             }
            FileMogo savedFile =  fileMogoRepository.save(saved);
@@ -319,9 +323,8 @@ public class FolderService {
 
     public void reNameFile(String id, String newName){
 
-
         Query query = new Query(Criteria.where("_id").is(id));
-        Update update = new Update().set("name", newName);
+        Update update = new Update().set("originalName", newName);
 
         mongoTemplate.upsert(query, update, FileMogo.class);
 
@@ -340,24 +343,6 @@ public class FolderService {
 
             mongoTemplate.upsert(query, update, FileMogo.class);
             return true;
-        }
-        return false;
-    }
-
-    //진짜 삭제
-    @Transactional
-    public boolean deleteFolder(String id,String path,String type) {
-
-        boolean result = sftpService.delete(path);
-        if(result){
-            if(type.equals("folder")){
-                folderMogoRepository.deleteById(id);
-                return true;
-            }else if(type.equals("file")){
-                fileMogoRepository.deleteById(id);
-                return true;
-            }
-
         }
         return false;
     }
@@ -383,17 +368,34 @@ public class FolderService {
     }
 
 
-    public int  favorite(String id){
-        Folder folder = folderMogoRepository.findById(id).orElseThrow();
-        int isPinned = folder.getIsPinned();
+    public int  favorite(String id,String type){
         int savedPinned = 0;
-        if(isPinned == 0) {
-            savedPinned = 1;
+
+        if(type.equals("folder")){
+            Folder folder = folderMogoRepository.findById(id).orElseThrow();
+            int isPinned = folder.getIsPinned();
+            if(isPinned == 0) {
+                savedPinned = 1;
+            }
+            Query query = new Query(Criteria.where("_id").is(id));
+            Update update = new Update()
+                    .set("isPinned", savedPinned)
+                    .set("updateAt", LocalDateTime.now());
+            mongoTemplate.upsert(query, update, Folder.class);
+        }else if(type.equals("file")){
+            FileMogo fileMogo = fileMogoRepository.findById(id).orElseThrow();
+            int isPinned = fileMogo.getIsPinned();
+            if(isPinned == 0) {
+                savedPinned = 1;
+            }
+            Query query = new Query(Criteria.where("_id").is(id));
+            Update update = new Update()
+                    .set("isPinned", savedPinned)
+                    .set("updateAt", LocalDateTime.now());
+
+            mongoTemplate.upsert(query, update, FileMogo.class);
         }
-        Query query = new Query(Criteria.where("_id").is(id));
-        Update update = new Update()
-                .set("isPinned", savedPinned);
-        mongoTemplate.upsert(query, update, Folder.class);
+
         return savedPinned;
     }
 
@@ -418,7 +420,7 @@ public class FolderService {
 
     //최근문서
     public List<FolderDto> latestFolder(String uid){
-        List<Folder> folders = folderMogoRepository.findByOwnerIdAndStatusIsNotOrderByUpdatedAtDesc(uid,0);
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndParentIdIsNotNullAndStatusIsNotOrderByUpdatedAtDesc(uid,0);
 
         List<FolderDto> folderDtos = folders.stream().map(Folder::toDTO).collect(Collectors.toList());
 
@@ -454,6 +456,117 @@ public class FolderService {
                 .collect(Collectors.toList());
 
     }
+
+    public boolean restore(String type,String id){
+        log.info("여기 들어온다 복구");
+
+        try{
+            UpdateResult updateResult = null;
+            if(type.equals("folder")){
+                Folder folder = folderMogoRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Folder not found with ID: " + id));
+
+                Query query = new Query(Criteria.where("_id").is(id));
+                Update update = new Update().set("status", 1).set("updatedAt", new Date());
+                updateResult =  mongoTemplate.upsert(query, update, Folder.class);
+            }else if(type.equals("file")){
+                FileMogo file = fileMogoRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + id));
+                Query query = new Query(Criteria.where("_id").is(id));
+                Update update = new Update().set("status", 1).set("updatedAt", new Date());
+                updateResult = mongoTemplate.upsert(query, update, FileMogo.class);
+            } else {
+                throw new IllegalArgumentException("Invalid type specified: " + type);
+            }
+
+
+            return updateResult != null && updateResult.getModifiedCount()>0;
+        }catch (IllegalArgumentException e){
+            // 처리할 수 없는 입력 값에 대한 에러 로그
+            log.error("Invalid input for restore: type={}, id={}", type, id, e);
+            return false;
+        }catch (Exception e) {
+            // 데이터베이스 작업 중 발생한 일반적인 예외 처리
+            log.error("Error occurred while restoring: type={}, id={}", type, id, e);
+            return false;
+        }
+
+    }
+
+
+
+    //진짜 삭제
+    @Transactional
+    public boolean delete(String type,String id) {
+
+        if(type.equals("folder")){
+            Folder folder = folderMogoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Folder not found with ID: " + id));
+            deleteFolderRecursively(folder);
+            String path = folder.getPath();
+            folderMogoRepository.deleteById(folder.getId());
+            boolean result = sftpService.delete(path);
+            return true;
+        }else if(type.equals("file")){
+            FileMogo fileMogo = fileMogoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + id));
+            String path = fileMogo.getPath();
+            fileMogoRepository.deleteById(fileMogo.getId());
+            boolean result = sftpService.delete(path);
+            sftpService.thumbnailDelete(fileMogo.getSavedName());
+            return true;
+        }
+
+
+        return false;
+    }
+
+
+    // 재귀적으로 폴더와 파일 삭제
+    private void deleteFolderRecursively(Folder folder) {
+        // 하위 파일 삭제
+        List<FileMogo> files = fileMogoRepository.findAllByFolderId(folder.getId());
+        for (FileMogo file : files) {
+            String filePath = file.getPath();
+            fileMogoRepository.deleteById(file.getId()); // DB에서 파일 삭제
+            sftpService.delete(filePath); // SFTP에서 파일 삭제
+        }
+
+        // 하위 폴더 삭제
+        List<Folder> subFolders = folderMogoRepository.findAllByParentId(folder.getId());
+        for (Folder subFolder : subFolders) {
+            folderMogoRepository.deleteById(subFolder.getId());
+            deleteFolderRecursively(subFolder); // 하위 폴더에 대해 재귀 호출
+        }
+    }
+
+    public void seletedDeleted(DeletedRequest deletedRequest){
+        if (deletedRequest == null) {
+            throw new IllegalArgumentException("DeletedRequest cannot be null");
+        }
+        List<String> folders = deletedRequest.getFolders();
+        if (folders != null && !folders.isEmpty()) {
+            for (String folder : folders) {
+                if (folder == null || folder.isBlank()) {
+                    throw new IllegalArgumentException("Folder ID cannot be null or blank");
+                }
+                delete("folder", folder);
+            }
+        }
+        List<String> files = deletedRequest.getFiles();
+        if (files != null && !files.isEmpty()) {
+            for (String file : files) {
+                if (file == null || file.isBlank()) {
+                    throw new IllegalArgumentException("File ID cannot be null or blank");
+                }
+                delete("file", file);
+            }
+        }
+
+
+    }
+
+
+
+
 
 
 

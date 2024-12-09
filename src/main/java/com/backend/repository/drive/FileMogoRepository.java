@@ -17,4 +17,7 @@ public interface FileMogoRepository extends MongoRepository<FileMogo, String> {
 
     List<FileMogo> findByOwnerUidAndStatus(String uid,int status);
 
+
+    List<FileMogo> findAllByFolderId(String folderId);
+
 }
