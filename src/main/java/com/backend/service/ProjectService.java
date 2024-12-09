@@ -58,29 +58,58 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectCoworkerRepository coworkerRepository;
     private final GroupRepository groupRepository;
-    private final GroupLeaderRepository groupLeaderRepository;
-    private final CalendarMapperRepository calendarMapperRepository;
     private final ProjectColumnRepository columnRepository;
     private final ProjectTaskRepository taskRepository;
 
     public Project createProject(PostProjectDTO postDTO, String username) {
 
-        Set<GetUsersAllDto> userList = postDTO.getCoworkers();
+        List<GetUsersAllDto> userList = postDTO.getCoworkers();
         Project project = postDTO.toProject();
-
+        // 공동 작업자 추가
         userList.forEach(u -> project.addCoworker(ProjectCoworker.builder()
                 .user(User.builder().id(u.getId()).build())
                 .project(project)
                 .isOwner(false)
                 .build()));
-
+        // 소유자 추가
         project.addCoworker(ProjectCoworker.builder()
-                        .user(userRepository.findByUid(username).orElseThrow(() -> new IllegalArgumentException(username+"작업자를 찾을 수 없습니다.")))
-                        .isOwner(true)
-                        .build());
+                .user(userRepository.findByUid(username).orElseThrow(() -> new IllegalArgumentException(username + " 작업자를 찾을 수 없습니다.")))
+                .isOwner(true)
+                .build());
+        // 컬럼 및 태스크 추가
+        postDTO.getColumns().forEach(columnDTO -> {
+            ProjectColumn column = columnDTO.toEntity();
 
-        return projectRepository.save(project);
+            log.info(column);
+            // 태스크 추가
+            columnDTO.getTasks().forEach(taskDTO -> {
+                ProjectTask task = taskDTO.toProjectTask();
+
+                log.info(task);
+                // 서브태스크 추가
+                log.info("is Subtasks() null?" + taskDTO.getSubtasks() != null);
+                if (taskDTO.getSubtasks() != null) {
+                    taskDTO.getSubtasks().forEach(subTaskDTO -> {
+                        task.addSubTask(subTaskDTO.toEntity()); // 서브태스크 추가
+                        log.info(subTaskDTO);
+                    });
+                }
+                // 댓글 추가
+                log.info("is Comments null?" + taskDTO.getComments() != null);
+                if (taskDTO.getComments() != null) {
+                    taskDTO.getComments().forEach(commentDTO -> {
+                        task.addComment(commentDTO.toEntity()); // 댓글 추가
+                        log.info(commentDTO);
+                    });
+                }
+                if(task!=null) column.addTask(task); // 컬럼에 태스크 추가
+            });
+            if(column!=null)project.addColumn(column); // 프로젝트에 컬럼 추가
+        });
+        return projectRepository.save(project);  // 최종적으로 프로젝트를 저장
     }
+
+
 
     public Map<String,Object> getAllProjects(String username) {
         Map<String,Object> map = new HashMap<>();
@@ -153,6 +182,19 @@ public class ProjectService {
 
     public ProjectTask saveTask(GetProjectTaskDTO taskDTO) {
         return taskRepository.save(taskDTO.toProjectTask());
+    }
+    public boolean delete(String type, Long id) {
+        try {
+            switch (type) {
+                case "task" -> taskRepository.deleteById(id);
+                case "column" -> columnRepository.deleteById(id);
+                case "project" -> projectRepository.deleteById(id);
+            }
+            return true;
+        }catch (Exception e){
+            log.error(e.getMessage());
+            return false;
+        }
     }
 
     public void updateCoworkers(PatchCoworkersDTO dto) {

@@ -19,8 +19,11 @@ public class ProjectComment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "task_id")
-    private Long taskId;
+    @ToString.Exclude
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @JoinColumn(name = "task_id")
+    private ProjectTask task;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;

@@ -77,4 +77,10 @@ public class ProjectController {
         List<Group> groupList = userService.getGroupsByUserUid(uid);
         return ResponseEntity.ok(groupList);
     }
+
+    @DeleteMapping("/project/{type}/{id}")
+    public ResponseEntity<?> deleteProject(@PathVariable String type, @PathVariable Long id) {
+        projectService.delete(type, id);
+        return ResponseEntity.ok().build();
+    }
 }

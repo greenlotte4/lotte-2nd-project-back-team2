@@ -5,10 +5,7 @@ import com.backend.dto.response.project.GetProjectTaskDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -25,13 +22,18 @@ public class ProjectColumn {
 
     private String title;
     private String color;
+
+    @Setter
     private int position;
 
-    @ManyToOne
+    @Setter
+    @ManyToOne(cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Project project;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "columnId", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProjectTask> tasks = new TreeSet<>(Comparator.comparing(ProjectTask::getPosition));
+    @Setter
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectTask> tasks = new ArrayList<>();
 
     public GetProjectColumnDTO toGetProjectColumnDTO () {
         return GetProjectColumnDTO.builder()
@@ -39,7 +41,13 @@ public class ProjectColumn {
                 .title(title)
                 .color(color)
                 .position(position)
-                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).collect(Collectors.toSet()))
+                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).toList())
                 .build();
+    }
+
+    public void addTask (ProjectTask task) {
+        if(tasks==null) {tasks = new ArrayList<>();}
+        tasks.add(task);
+        task.setColumn(this);
     }
 }
