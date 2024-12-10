@@ -249,9 +249,9 @@ public class ProjectService {
         if(project.isEmpty()){
             return ResponseEntity.badRequest().body("프로젝트가 없습니다...");
         }
-        Set<ProjectColumn> columns = project.get().getColumns();
+//        Set<ProjectColumn> columns = project.get().getColumns();
 
         System.out.println("============================222");
-        return ResponseEntity.ok(columns);
+        return ResponseEntity.ok("columns");
     }
 }
