@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.document.calendar.CalendarAlert;
 import com.backend.dto.request.calendar.*;
 import com.backend.dto.response.calendar.GetCalendarContentNameDto;
 import com.backend.dto.response.calendar.GetCalendarNameDto;
@@ -9,6 +10,7 @@ import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarContent;
 import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.user.User;
+import com.backend.repository.calendar.CalendarAlertRepository;
 import com.backend.repository.calendar.CalendarContentRepository;
 import com.backend.repository.calendar.CalendarMapperRepository;
 import com.backend.repository.calendar.CalendarRepository;
@@ -17,11 +19,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +42,8 @@ public class CalendarService {
     private final CalendarContentRepository calendarContentRepository;
     private final UserRepository userRepository;
     private final CalendarMapperRepository calendarMapperRepository;
+    private final CalendarAlertRepository calendarAlertRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ResponseEntity<?> getCalendarName(Long userId) {
         Map<String,Object> map = new HashMap<>();
@@ -149,6 +158,32 @@ public class CalendarService {
                 .build();
 
         calendarContentRepository.save(calendarContent);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        // String을 LocalDate로 변환
+        LocalDate startDate = LocalDate.parse(dto.getSdate().substring(0,dto.getSdate().indexOf(" ")), dateFormatter);
+        LocalDate endDate = LocalDate.parse(dto.getEdate().substring(0,dto.getEdate().indexOf(" ")), dateFormatter);
+        List<CalendarMapper> calendarMapper = calendarMapperRepository.findAllByCalendar(calendar.get());
+        List<Long> userIds2 = calendarMapper.stream().map(v->v.getUser().getId()).toList();
+        List<CalendarAlert> alerts = new ArrayList<>();
+        for (LocalDate date = startDate.plusDays(1); !date.isAfter(endDate.plusDays(1)); date = date.plusDays(1)) {
+            CalendarAlert calendarAlert = CalendarAlert.builder()
+                    .content(dto.getMemo())
+                    .status(1)
+                    .type(dto.getAlert())
+                    .location(dto.getLocation())
+                    .title(dto.getTitle())
+                    .date(date)
+                    .calendarId(calendar.get().getCalendarId())
+                    .contentId(calendarContent.getCalendarContentId())
+                    .time(dto.getSdate().substring(dto.getSdate().indexOf(" ")+1,dto.getSdate().length()-3))
+                    .userIds(userIds2.toString())
+                    .build();
+
+            alerts.add(calendarAlert);
+        }
+        calendarAlertRepository.saveAll(alerts);
+
         Map<String, Object> map = new HashMap<>();
         map.put("message","등록이 완료되었습니다.");
         map.put("color",calendar.get().getColor());
@@ -166,6 +201,38 @@ public class CalendarService {
         if(contents.isEmpty()){
             return ResponseEntity.badRequest().body("수정할 캘린더가 존재하지 않습니다...");
         }
+
+        Calendar calendar = contents.get().getCalendar();
+
+        System.out.println("================sdfsdfsd==");
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<CalendarAlert> alerts = calendarAlertRepository.findAllByContentId(dto.getContentId());
+        calendarAlertRepository.deleteAll(alerts);
+
+        LocalDate startDate = LocalDate.parse(dto.getStartDate().substring(0,dto.getStartDate().indexOf(" ")), dateFormatter);
+        LocalDate endDate = LocalDate.parse(dto.getEndDate().substring(0,dto.getEndDate().indexOf(" ")), dateFormatter);
+        List<CalendarMapper> calendarMapper = calendarMapperRepository.findAllByCalendar(calendar);
+        List<Long> userIds2 = calendarMapper.stream().map(v->v.getUser().getId()).toList();
+        List<CalendarAlert> newAlerts = new ArrayList<>();
+        for (LocalDate date = startDate.plusDays(1); !date.isAfter(endDate.plusDays(1)); date = date.plusDays(1)) {
+            CalendarAlert calendarAlert = CalendarAlert.builder()
+                    .content(contents.get().getMemo())
+                    .status(1)
+                    .type(contents.get().getAlertStatus())
+                    .location(contents.get().getLocation())
+                    .title(dto.getTitle())
+                    .date(date)
+                    .calendarId(calendar.getCalendarId())
+                    .contentId(dto.getContentId())
+                    .time(dto.getStartDate().substring(dto.getStartDate().indexOf(" ")+1,dto.getStartDate().length()-3))
+                    .userIds(userIds2.toString())
+                    .build();
+
+            newAlerts.add(calendarAlert);
+        }
+        calendarAlertRepository.saveAll(newAlerts);
+
+
         contents.get().patchContent(dto);
         return ResponseEntity.ok().body("수정이 완료되었습니다.");
     }
@@ -267,6 +334,10 @@ public class CalendarService {
         if(content.isEmpty()){
             return ResponseEntity.badRequest().body("일정이 존재하지않습니다..");
         }
+
+        List<CalendarAlert> alerts = calendarAlertRepository.findAllByContentId(content.get().getCalendarContentId());
+        calendarAlertRepository.deleteAll(alerts);
+
         content.get().patchStatus(0);
         Map<String, Object> map = new HashMap<>();
         map.put("id",content.get().getCalendarContentId());
@@ -283,6 +354,34 @@ public class CalendarService {
         if(calendar.isEmpty()){
             return ResponseEntity.badRequest().body("캘린더가 존재하지않습니다..");
         }
+        System.out.println("================sdfsdfsd==");
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<CalendarAlert> alerts = calendarAlertRepository.findAllByContentId(content.get().getCalendarContentId());
+        calendarAlertRepository.deleteAll(alerts);
+
+        LocalDate startDate = LocalDate.parse(dto.getSdate().substring(0,dto.getSdate().indexOf(" ")), dateFormatter);
+        LocalDate endDate = LocalDate.parse(dto.getEdate().substring(0,dto.getEdate().indexOf(" ")), dateFormatter);
+        List<CalendarMapper> calendarMapper = calendarMapperRepository.findAllByCalendar(calendar.get());
+        List<Long> userIds2 = calendarMapper.stream().map(v->v.getUser().getId()).toList();
+        List<CalendarAlert> newAlerts = new ArrayList<>();
+        for (LocalDate date = startDate.plusDays(1); !date.isAfter(endDate.plusDays(1)); date = date.plusDays(1)) {
+            CalendarAlert calendarAlert = CalendarAlert.builder()
+                    .content(dto.getMemo())
+                    .status(1)
+                    .type(dto.getAlert())
+                    .location(dto.getLocation())
+                    .title(dto.getTitle())
+                    .date(date)
+                    .calendarId(calendar.get().getCalendarId())
+                    .contentId(dto.getCalendarId())
+                    .time(dto.getSdate().substring(dto.getSdate().indexOf(" ")+1,dto.getSdate().length()-3))
+                    .userIds(userIds2.toString())
+                    .build();
+
+            newAlerts.add(calendarAlert);
+        }
+        calendarAlertRepository.saveAll(newAlerts);
+
         String color = calendar.get().getColor();
         content.get().putContent(dto,calendar.get());
 
@@ -371,6 +470,7 @@ public class CalendarService {
         if(optCalendar.isEmpty()){
             return ResponseEntity.badRequest().body("캘린더 정보가 일치하지않습니다...");
         }
+
         optCalendar.get().putCalendar(dtos);
 
         List<CalendarMapper> mappers = calendarMapperRepository.findAllByCalendar(optCalendar.get());
@@ -378,10 +478,29 @@ public class CalendarService {
         if(mappers.isEmpty()){
             return ResponseEntity.badRequest().body("캘린더에 공유인원이 없습니다...");
         }
+        List<Long> ids = dtos.getUsers().stream().map(GetUsersAllDto::getId).toList();
+        List<Long> originIds = mappers.stream().map(v->v.getUser().getId()).toList();
+
+        List<Long> sortedIds = new ArrayList<>(ids);
+        List<Long> sortedOriginIds = new ArrayList<>(originIds);
+
+        Collections.sort(sortedIds);
+        Collections.sort(sortedOriginIds);
+
+        boolean areEqual = sortedIds.equals(sortedOriginIds);
+        if(!areEqual){
+            List<CalendarAlert> alerts = calendarAlertRepository.findAllByCalendarId(dtos.getId());
+            List<CalendarAlert> newAlerts = new ArrayList<>();
+            for (CalendarAlert alert : alerts) {
+                alert.patchUsers(sortedIds.toString());
+                newAlerts.add(alert);
+            }
+            calendarAlertRepository.saveAll(newAlerts);
+        }
 
         calendarMapperRepository.deleteAll(mappers);
 
-        List<Long> ids = dtos.getUsers().stream().map(GetUsersAllDto::getId).toList();
+
         for (Long id : ids) {
             Optional<User> user = userRepository.findById(id);
             if(user.isEmpty()){
@@ -409,6 +528,9 @@ public class CalendarService {
         if(mappers.isEmpty()){
             return ResponseEntity.ok("캘린더 공유인원이 없습니다...");
         }
+        List<CalendarAlert> alerts = calendarAlertRepository.findAllByCalendarId(id);
+        calendarAlertRepository.deleteAll(alerts);
+
         calendarMapperRepository.deleteAll(mappers);
 
         List<CalendarContent> contents = calendarContentRepository.findAllByCalendarAndCalendar_StatusIsNot(calendar.get(),0);
@@ -433,5 +555,20 @@ public class CalendarService {
         map.put("calendarIds",calendarIds);
         map.put("userId",userId);
         return ResponseEntity.ok(map);
+    }
+
+
+    @Scheduled(fixedRate = 60000) // 1분마다 실행
+    public void pushAlert() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = LocalDate.now();
+        String HM = String.format("%02d:%02d", now.getHour(), now.getMinute());
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59, 999999999);
+        Date start = Date.from(startOfDay.toInstant(ZoneOffset.UTC));
+        Date end = Date.from(endOfDay.toInstant(ZoneOffset.UTC));
+        List<CalendarAlert> alerts = calendarAlertRepository.findAllByDateBetweenAndTime(start, end,HM);
+        System.out.println(alerts);
+        messagingTemplate.convertAndSend("/topic/alert",alerts);
     }
 }

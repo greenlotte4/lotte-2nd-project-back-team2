@@ -68,9 +68,7 @@ public class WebSocketController {
     @MessageMapping("/calendar/delete")
     @Transactional
     public void deleteCalendar(String calendarId) {
-        List<CalendarContent> contents = calendarContentRepository.findAllByCalendar_CalendarIdAndCalendar_StatusIsNot(Long.parseLong(calendarId),0);
         Map<String, Object> map = new HashMap<>();
-        List<GetCalendarsDto> dtos = contents.stream().map(CalendarContent::toGetCalendarsDto).toList();
         map.put("delete", calendarId);
 
         messagingTemplate.convertAndSend("/topic/calendar/"+calendarId, map);

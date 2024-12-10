@@ -13,12 +13,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -108,6 +110,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                     request.setAttribute("uid",auth.getUid());
                     request.setAttribute("role",auth.getRole());
                     request.setAttribute("id", auth.getId());
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            auth.getId(), null, List.of(new SimpleGrantedAuthority(auth.getRole())));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }else {
                     log.info("토큰 없따");
                 }
@@ -142,7 +147,9 @@ public class SecurityConfig implements WebMvcConfigurer {
 
             log.info("Authentication 객체 생성 완료: {}", authentication);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContext context = SecurityContextHolder.getContext();
+            // 예: 비동기 작업에서 인증 정보를 복사하고 사용할 수 있도록 설정
+            SecurityContextHolder.setContext(context);
             AuthenticateDto auth = AuthenticateDto.builder()
                     .id(id)
                     .uid(username)
@@ -157,4 +164,5 @@ public class SecurityConfig implements WebMvcConfigurer {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+
 }
