@@ -357,17 +357,5 @@ public class UserService {
         }
     }
 
-    public ResponseEntity<?> goToWork(String uid, LocalDateTime start) {
-        LocalDate date = LocalDate.now();
-        LocalTime checkInTime = LocalTime.now();
-        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(uid, date);
-        if (optAttendance.isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 출근 기록이 있습니다.");
-        }
-        AttendanceTime.builder()
-                .userId(uid)
-                .checkInTime(checkInTime)
-                .build();
-        return null;
-    }
+
 }

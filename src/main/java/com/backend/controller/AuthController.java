@@ -73,9 +73,9 @@ public class AuthController {
 
             user.get().updateLoginDate(LocalDateTime.now());
             return ResponseEntity.ok().body(response);
+        }else{
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("비밀번호 안 맞음");
         }
-
-        return ResponseEntity.ok().build();
     }
 
     // Redis에 저장

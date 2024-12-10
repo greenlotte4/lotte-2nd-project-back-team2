@@ -5,6 +5,7 @@ import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.response.GetAdminUsersRespDto;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.group.Group;
+import com.backend.service.AttendanceService;
 import com.backend.service.GroupService;
 import com.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +23,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:8010")
 @RequiredArgsConstructor
 @Log4j2
 public class UserController {
@@ -91,23 +91,6 @@ public class UserController {
         String company = "1246857";
         ResponseEntity<?> response = userService.getALlUsersCnt(company);
         return response;
-    }
-
-//    @GetMapping("/attendance")
-//    public ResponseEntity<?> workCheck (){
-//        List<LocalDateTime> today = userService.getTodayWork();
-//        return null;
-//    }
-    @PostMapping("/attendance/checkIn")
-    public ResponseEntity<?> checkIn(Authentication auth , LocalDateTime start){
-        String uid = auth.getName();
-        userService.goToWork(uid, start);
-        return null;
-    }
-
-    @PostMapping("/attendance/checkOut")
-    public ResponseEntity<?> checkOut(LocalDateTime end){
-        return null;
     }
 
 
