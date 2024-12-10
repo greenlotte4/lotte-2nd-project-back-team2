@@ -26,4 +26,5 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
 
     List<Folder> findAllByParentId(String parentId);
 
+    Folder findFolderByNameAndParentId(String name, String parentId);
 }

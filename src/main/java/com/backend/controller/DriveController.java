@@ -20,10 +20,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +45,7 @@ public class DriveController {
     private final PermissionService permissionService;
     private final SftpService sftpService;
     private final ThumbnailService thumbnailService;
+    private final ProgressService progressService;
 
 
     //드라이브생성 => 제일 큰 폴더
@@ -203,42 +208,85 @@ public class DriveController {
 
 
     // 파일 업로드 처리
+    @Transactional
     @PostMapping("/upload/{folderId}")
     public ResponseEntity<?> uploadFiles( @PathVariable String folderId,
                                           @RequestParam("files") List<MultipartFile> files,
-                                          @RequestParam("relativePaths") String relativePathsJson, // JSON 문자열로 받아옴
-                                          @RequestParam("maxOrder") double maxOrder,
+                                          @RequestParam("relativePaths") List<String> relativePaths, // 폴더 경로 배열 수신
+                                          @RequestParam("fileMaxOrder") double fileMaxOrder,
+                                          @RequestParam("folderMaxOrder") double folderMaxOrder,
                                           @RequestParam("uid") String uid
     )  {
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<String> relativePaths = null;
+        double fileOrder = fileMaxOrder;
+        double folderOrder = folderMaxOrder;
+        FolderDto parentFolder = folderService.getParentFolder(folderId);
+        log.info("relativePaths:"+relativePaths);
+
         try {
-            relativePaths = objectMapper.readValue(relativePathsJson, new TypeReference<List<String>>() {});
+            for (int i = 0; i < files.size(); i++) {
+                MultipartFile file = files.get(i);
+                String relativePath = (relativePaths != null && relativePaths.size() > i)
+                        ? relativePaths.get(i)
+                        : null;
 
-            log.info("Upload files"+files);
-            log.info("folderId:"+folderId);
-            log.info("relativePaths:"+relativePaths);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+                // 상대 경로가 없는 경우 최상위 폴더에 저장
+                if (relativePath == null || relativePath.isEmpty() ) {
+                    folderService.saveFileToFolder(file, folderId, fileOrder, uid);
+                    fileOrder += 100;
+                    continue;
+                }
+
+                // 상대 경로를 '/'로 분리하고 공백 제거
+                String[] folderList = Arrays.stream(relativePath.split("/"))
+                        .filter(folderName -> folderName != null && !folderName.trim().isEmpty())
+                        .toArray(String[]::new);
+                if(folderList[0].equals(".")){
+                    folderService.saveFileToFolder(file, folderId, fileOrder, uid);
+                    fileOrder += 100;
+                    continue;
+                }
+
+                String currentParentId = folderId; // 초기 Parent ID는 최상위 폴더 ID
+                updateAndSendProgress(uid, i + 1, files.size());
+
+                for (String folder : folderList) {
+                    String folderOrFileName = folder;
+
+                        Folder existingFolder = folderService.existFolder(folderOrFileName, currentParentId);
+
+                        if (existingFolder != null) {
+                            currentParentId = existingFolder.getId(); // 기존 폴더 사용
+                            continue;
+                        }
+
+                        // 새로운 폴더 생성
+                        NewDriveRequest newDriveRequest = NewDriveRequest.builder()
+                                .name(folderOrFileName)
+                                .owner(uid)
+                                .parentId(currentParentId)
+                                .parentFolder(parentFolder)
+                                .order(folderOrder)
+                                .build();
+                        String newFolderId = folderService.createFolder(newDriveRequest);
+                        currentParentId = newFolderId; // 새로 생성된 폴더 ID를 현재 Parent ID로 설정
+                        folderOrder += 100;
+
+                }
+                folderService.saveFileToFolder(file, currentParentId, fileOrder, uid);
+                fileOrder += 100;
+            }
+            return ResponseEntity.ok("파일 업로드 성공");
+        } catch (MaxUploadSizeExceededException e) {
+            log.error("파일 크기 초과: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("파일 크기가 허용된 최대 크기를 초과했습니다.");
+        } catch (Exception e) {
+            log.error("파일 업로드 중 오류 발생: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("파일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
-
-
-
-//        try {
-//            folderService.uploadFiles(files, folderId, maxOrder, uid);
-//            return ResponseEntity.ok("파일 업로드 성공");
-//        } catch (MaxUploadSizeExceededException e) {
-//            log.error("파일 크기 초과: {}", e.getMessage());
-//            return ResponseEntity
-//                    .status(HttpStatus.BAD_REQUEST)
-//                    .body("파일 크기가 허용된 최대 크기를 초과했습니다.");
-//        } catch (Exception e) {
-//            log.error("파일 업로드 중 오류 발생: {}", e.getMessage());
-//            return ResponseEntity
-//                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("파일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.");
-//        }
-        return null;
 
     }
 
@@ -377,6 +425,33 @@ public class DriveController {
         boolean result = folderService.delete(type,id);
         return ResponseEntity.ok().body(result);
     }
+
+
+
+    //webSocket
+
+    private final SimpMessagingTemplate messagingTemplate;
+
+    // 진행률 전송 메서드
+    public void sendUploadProgress(String userId, int progress) {
+        String destination = "/topic/progress/uploads/" + userId;
+        messagingTemplate.convertAndSend(destination, progress);
+    }
+
+    private void updateAndSendProgress(String userId, int current, int total) {
+        int progress = (int) ((current / (double) total) * 100);
+        sendUploadProgress(userId, progress);
+    }
+
+    @MessageMapping("/topic/progress/uploads/{uid}")
+    public void testProgress(String message, @PathVariable String uid) {
+        log.info("WebSocket 전송 경로: /topic/progress/uploads/{}", uid);
+        int progress = 50; // 테스트용 진행률
+        log.info("Received WebSocket message: {}", message);
+        messagingTemplate.convertAndSend("/topic/progress/uploads/" + uid, progress);
+    }
+
+
 
 
 }

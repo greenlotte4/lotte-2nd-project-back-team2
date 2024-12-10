@@ -17,7 +17,7 @@ public class NewDriveRequest {
     private String name;         // 드라이브 이름
     private String owner;        // 소유자 이름
     private String description;  // 설명
-    private int order;           // 순서
+    private double order;           // 순서
     private String type;
     private String driveMaster;  // 드라이브 마스터 이름
     private String masterEmail;  // 드라이브 마스터 이메일
