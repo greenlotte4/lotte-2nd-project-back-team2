@@ -4,6 +4,7 @@ import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectColumn;
 import lombok.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -33,7 +34,7 @@ public class GetProjectColumnDTO {
                 .title(title)
                 .color(color)
                 .position(position)
-                .tasks(tasks.stream().map(GetProjectTaskDTO::toProjectTask).toList())
+                .tasks(tasks.stream().map(GetProjectTaskDTO::toProjectTask).collect(Collectors.toList()))
                 .build();
     }
 }

@@ -27,12 +27,13 @@ public class ProjectColumn {
     private int position;
 
     @Setter
-    @ManyToOne(cascade = CascadeType.ALL)
     @ToString.Exclude
+    @ManyToOne(cascade = CascadeType.PERSIST)
     private Project project;
 
     @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ProjectTask> tasks = new ArrayList<>();
 
     public GetProjectColumnDTO toGetProjectColumnDTO () {
@@ -41,13 +42,17 @@ public class ProjectColumn {
                 .title(title)
                 .color(color)
                 .position(position)
-                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).toList())
+                .tasks(tasks.stream().map(ProjectTask::toGetProjectTaskDTO).collect(Collectors.toList()))
                 .build();
     }
 
     public void addTask (ProjectTask task) {
-        if(tasks==null) {tasks = new ArrayList<>();}
-        tasks.add(task);
-        task.setColumn(this);
+        try {
+            if(tasks==null) {tasks = new ArrayList<>();}
+            tasks.add(task);
+            task.setColumn(this);
+        } catch (UnsupportedOperationException e) {
+            System.out.println("tasks 리스트는 Immutable입니다.");
+        }
     }
 }

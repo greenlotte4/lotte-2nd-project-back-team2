@@ -1,10 +1,13 @@
 package com.backend.dto.response.project;
 
 import com.backend.entity.project.ProjectColumn;
+import com.backend.entity.project.ProjectCoworker;
 import com.backend.entity.project.ProjectTask;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -22,20 +25,27 @@ public class GetProjectTaskDTO {
     private int status; // 완료, 미완료
 
     private LocalDate duedate; // 마감일
-    private List<GetProjectSubTaskDTO> subtasks;
-    private List<GetProjectCommentDTO> comments;
+    private List<GetProjectSubTaskDTO> subTasks = new ArrayList<>();
+    private List<GetProjectCommentDTO> comments = new ArrayList<>();
+    private List<GetProjectCoworkerDTO> associate = new ArrayList<>();
 
     public ProjectTask toProjectTask() {
-        return ProjectTask.builder()
-                .id(id)
-                .column(ProjectColumn.builder().id(columnId).build())
-                .title(title)
-                .content(content)
-                .priority(priority)
-                .duedate(duedate)
-                .status(status)
-                .comments(null)
-                .build();
+        try{
+            return ProjectTask.builder()
+                    .id(id)
+                    .column(ProjectColumn.builder().id(columnId).build())
+                    .title(title)
+                    .content(content)
+                    .priority(priority)
+                    .duedate(duedate)
+                    .status(status)
+                    .subTasks(subTasks.stream().map(GetProjectSubTaskDTO::toEntity).collect(Collectors.toList()))
+                    .comments(comments.stream().map(GetProjectCommentDTO::toEntity).collect(Collectors.toList()))
+                    .associate(associate.stream().map(GetProjectCoworkerDTO::toProjectCoworker).collect(Collectors.toList()))
+                    .build();
+        }catch (Exception e){
+            return null;
+        }
     }
 
 }

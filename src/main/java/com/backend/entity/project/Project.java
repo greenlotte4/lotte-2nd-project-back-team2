@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,11 +28,13 @@ public class Project { //프로젝트
     @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
+    @Builder.Default
     private List<ProjectCoworker> coworkers = new ArrayList<>();
 
     @Setter
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
+    @Builder.Default
     private List<ProjectColumn> columns = new ArrayList<>();
 
     @Column(name = "project_progress")
@@ -59,8 +62,8 @@ public class Project { //프로젝트
                 .title(title)
                 .type(type)
                 .status(status)
-                .columns(columns.stream().map(ProjectColumn::toGetProjectColumnDTO).toList())
-                .coworkers(coworkers.stream().map(ProjectCoworker::toGetCoworkerDTO).toList())
+                .columns(columns.stream().map(ProjectColumn::toGetProjectColumnDTO).collect(Collectors.toList()))
+                .coworkers(coworkers.stream().map(ProjectCoworker::toGetCoworkerDTO).collect(Collectors.toList()))
                 .build();
     }
 
