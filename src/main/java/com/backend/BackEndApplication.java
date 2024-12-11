@@ -8,6 +8,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EnableMongoRepositories
 @EnableWebSocketMessageBroker
@@ -16,6 +18,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 public class BackEndApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
         SpringApplication.run(BackEndApplication.class, args);
     }
 

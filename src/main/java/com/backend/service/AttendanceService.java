@@ -1,12 +1,15 @@
 package com.backend.service;
 
 import com.backend.document.user.AttendanceTime;
+import com.backend.dto.request.user.ReqAttendanceDTO;
 import com.backend.dto.request.user.RequestVacationDTO;
+import com.backend.dto.response.user.ResponseAttendanceDTO;
 import com.backend.entity.user.User;
 import com.backend.entity.user.Vacation;
 import com.backend.repository.UserRepository;
 import com.backend.repository.user.AttendanceTimeRepository;
 import com.backend.repository.user.VacationRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -16,9 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -38,10 +39,16 @@ public class AttendanceService {
     private final UserRepository userRepository;
     private final VacationRepository vacationRepository;
 
-    public ResponseEntity<?> goToWork(String uid) {
-        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        LocalTime time = LocalTime.now();
-        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(uid, date);
+    @PostConstruct
+    public void init() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
+    }
+
+    public ResponseEntity<?> goToWork(Long userId) {
+        ZoneId zoneId = ZoneId.of("Asia/Seoul");
+        String date = LocalDate.now(zoneId).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        LocalTime time = LocalTime.now(zoneId);
+        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(userId, date);
 
         if (optAttendance.isPresent()) {
             log.info("출근 기록 "+optAttendance.get().toString());
@@ -67,7 +74,7 @@ public class AttendanceService {
             }
 
             AttendanceTime entity = AttendanceTime.builder()
-                    .userId(uid)
+                    .userId(userId)
                     .date(date)
                     .status(status)
                     .checkInTime(time)
@@ -83,12 +90,12 @@ public class AttendanceService {
         }
     }
 
-    public ResponseEntity<?> leaveWork(String uid) {
+    public ResponseEntity<?> leaveWork(Long userId) {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         LocalTime time = LocalTime.now();
         log.info("퇴근 기록 "+date+time);
 
-        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(uid, date);
+        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(userId, date);
         if(!optAttendance.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("출근 기록이 먼저 입력되어야 합니다.");
         }
@@ -120,7 +127,7 @@ public class AttendanceService {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         List<AttendanceTime> todayRecords = attendanceTimeRepository.findByDate(date);
         log.info("오늘 일자 제대로 뽑히는지 "+todayRecords);
-        List<String> recordedUserIds = todayRecords.stream()
+        List<Long> recordedUserIds = todayRecords.stream()
                 .map(AttendanceTime::getUserId)
                 .toList();
         log.info("제대로 나온 게 맞나? "+recordedUserIds.toString());
@@ -133,14 +140,14 @@ public class AttendanceService {
             handleAbsent(date, recordedUserIds, allUsers);
         }
     }
-    private void handleLate(String date, List<String> recordedUserIds, List<User> allUsers) {
+    private void handleLate(String date, List<Long> recordedUserIds, List<User> allUsers) {
         LocalDate today = LocalDate.now();
         allUsers.stream()
-                .filter(user -> !recordedUserIds.contains(user.getUid())) // 오늘 기록 없는 사용자
-                .filter(user -> !isOnLeave(user.getUid(), today)) // 연차가 아닌 사용자
+                .filter(user -> !recordedUserIds.contains(user.getId())) // 오늘 기록 없는 사용자
+                .filter(user -> !isOnLeave(user.getId(), today)) // 연차가 아닌 사용자
                 .forEach(user -> {
                     AttendanceTime lateAttendance = AttendanceTime.builder()
-                            .userId(user.getUid())
+                            .userId(user.getId())
                             .date(date)
                             .checkInTime(null)
                             .checkOutTime(null)
@@ -151,15 +158,15 @@ public class AttendanceService {
                 });
     }
 
-    private void handleAbsent(String date, List<String> recordedUserIds, List<User> allUsers) {
-        log.info("결근 처리할 놈들 "+allUsers.toString());
+    private void handleAbsent(String date, List<Long> recordedUserIds, List<User> allUsers) {
+        log.info("전체 유저 데이터 "+allUsers.toString());
         LocalDate today = LocalDate.now();
         allUsers.stream()
-                .filter(user -> !recordedUserIds.contains(user.getUid())) // 오늘 기록이 없는 사용자
-                .filter(user -> !isOnLeave(user.getUid(), today)) // 연차가 아닌 사용자만 필터링
+                .filter(user -> !recordedUserIds.contains(user.getId())) // 오늘 기록이 없는 사용자
+                .filter(user -> !isOnLeave(user.getId(), today)) // 연차가 아닌 사용자만 필터링
                 .forEach(user -> {
                     AttendanceTime absentAttendance = AttendanceTime.builder()
-                            .userId(user.getUid())
+                            .userId(user.getId())
                             .date(date)
                             .checkInTime(null)
                             .checkOutTime(null)
@@ -171,7 +178,7 @@ public class AttendanceService {
                 });
     }
 
-    private boolean isOnLeave(String userId, LocalDate date) {
+    private boolean isOnLeave(Long userId, LocalDate date) {
         return vacationRepository
                 .existsByUserIdAndStartDateAndStatus
                         (userId, date, 1);
@@ -188,13 +195,13 @@ public class AttendanceService {
             return; // 처리 종료
         }
         // 연차 사용자 ID 목록 추출
-        List<String> vacationUserIds = approvedVacations.stream()
+        List<Long> vacationUserIds = approvedVacations.stream()
                 .map(Vacation::getUserId)
                 .toList();
 
         // 이미 기록된 사용자 확인
         List<AttendanceTime> todayRecords = attendanceTimeRepository.findByDate(date);
-        List<String> recordedUserIds = (todayRecords != null)
+        List<Long> recordedUserIds = (todayRecords != null)
                 ? todayRecords.stream().map(AttendanceTime::getUserId).toList()
                 : Collections.emptyList();
 
@@ -228,9 +235,9 @@ public class AttendanceService {
         }
     }
 
-    public Map<String, String> getTodayAttendance(String uid) {
+    public Map<String, String> getTodayAttendance(Long userId) {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(uid, date);
+        Optional<AttendanceTime> optAttendance = attendanceTimeRepository.findByUserIdAndDate(userId, date);
         log.info("오늘 출퇴근 ");
         Map<String, String > times = new HashMap<>();
         if(optAttendance.isPresent()) {
@@ -247,5 +254,58 @@ public class AttendanceService {
         }
         log.info("오늘 출퇴근 2 " + times.toString());
         return times;
+    }
+
+    public ResponseEntity<?> getWeekAttendance(Long userId) {
+//        LocalDate today = LocalDate.now();
+//        LocalDate oneWeekAgo = today.minusWeeks(1);
+//        log.info("시작 날짜 끝 날짜 1"+today+oneWeekAgo);
+//        String startDate = oneWeekAgo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+//        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+//        log.info("시작 날짜 끝 날짜 2"+startDate+endDate);
+//        List<AttendanceTime> attList = attendanceTimeRepository.findAllByUserIdAndDateBetween(userId, startDate, endDate );
+
+        List<AttendanceTime> attList = attendanceTimeRepository
+                .findTop7ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(userId);
+
+        if(attList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("근무 기록을 찾을 수 없습니다.");
+        }
+
+        log.info("일주일 근태 기록 레포지토리 실행 결과 "+attList.toString());
+        List<ResponseAttendanceDTO> dtos = attList.stream().map(att -> {
+            return ResponseAttendanceDTO.builder()
+                    .id(att.getId().toString())
+                    .userId(att.getUserId())
+                    .date(att.getDate())
+                    .checkInTime(att.getCheckInTime())
+                    .checkOutTime(att.getCheckOutTime())
+                    .status(att.getStatus())
+                    .build();
+        }).toList();
+
+        return ResponseEntity.ok().body(dtos);
+    }
+
+    public ResponseEntity<?> searchByDate(Long uid, ReqAttendanceDTO dto) {
+        String start = dto.getStartDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String end = dto.getEndDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        List<AttendanceTime> attList = attendanceTimeRepository.findAllByUserIdAndDateBetween(uid, start, end);
+        if(attList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("데이터가 없습니다.");
+        }
+        log.info("일주일 근태 기록 레포지토리 실행 결과 "+attList.toString());
+
+        List<ResponseAttendanceDTO> dtos = attList.stream().map(att -> {
+            return ResponseAttendanceDTO.builder()
+                    .id(att.getId().toString())
+                    .userId(att.getUserId())
+                    .date(att.getDate())
+                    .checkInTime(att.getCheckInTime())
+                    .checkOutTime(att.getCheckOutTime())
+                    .status(att.getStatus())
+                    .build();
+        }).toList();
+        return ResponseEntity.ok().body(dtos);
     }
 }

@@ -28,7 +28,7 @@ public class AttendanceTime {
 
     @Id
     private String id;            // MongoDB 기본 키
-    private String userId;        // 사용자 ID
+    private Long userId;        // 사용자 ID
     private String date;       // 근태 날짜
     private LocalTime checkInTime;   // 출근 시간 (HH:mm 형식)
     private LocalTime checkOutTime;  // 퇴근 시간 (HH:mm 형식)

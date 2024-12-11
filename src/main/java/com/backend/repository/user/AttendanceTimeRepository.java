@@ -11,7 +11,11 @@ import java.util.Optional;
 @Repository
 public interface AttendanceTimeRepository extends MongoRepository<AttendanceTime, String> {
 
-    Optional<AttendanceTime> findByUserIdAndDate(String uid, String date);
+    Optional<AttendanceTime> findByUserIdAndDate(Long userId, String date);
 
     List<AttendanceTime> findByDate(String date);
+
+    List<AttendanceTime> findAllByUserIdAndDateBetween(Long userId, String startDate, String endDate);
+
+    List<AttendanceTime> findTop7ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(Long userId);
 }

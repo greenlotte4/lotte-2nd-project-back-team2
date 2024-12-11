@@ -13,6 +13,6 @@ import java.util.Optional;
 public interface VacationRepository extends JpaRepository<Vacation, Integer> {
 
     boolean existsByUserIdAndStartDateAndStatus(
-            String userId, LocalDate date, int status);
+            Long userId, LocalDate date, int status);
     List<Vacation> findByStartDateAndStatus(LocalDate today, int status);
 }

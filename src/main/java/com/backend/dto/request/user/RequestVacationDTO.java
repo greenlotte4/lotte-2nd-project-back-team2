@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RequestVacationDTO {
 //    private String userName; //연차 신청자 이름
-    private String userId;  //연차 신청자 uid
+    private Long userId;  //연차 신청자 uid
     private Long department;  // 신청자 부서
     private String vacationType; // FULL 연차(8시간) HALF 반차(4시간) 반반차는 없습니다
     private String reason;  // 연차 사유
@@ -27,7 +27,7 @@ public class RequestVacationDTO {
     private Time startTime; //연차 적용 시작시간
     private Time endTime; //연차 적용 마감시간
     private LocalDateTime requestDate; // 신청일
-    private String approvedBy; //결재자
+    private Long approvedBy; //결재자
     private int status; //결재상태 0 대기 1 승인 2 거절
 
 

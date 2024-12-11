@@ -27,7 +27,7 @@ public class Vacation {
 //    @Column(name = "user_name")
 //    private String userName; //연차 신청자 이름
     @Column(name = "user_id")
-    private String userId;  //연차 신청자 uid
+    private Long userId;  //연차 신청자 Long userid
     @Column(name = "department")
     private Long department;  // 신청자 부서
     @Column(name = "vacation_type")
@@ -45,7 +45,7 @@ public class Vacation {
     @Column(name = "vacation_rdate")
     private LocalDateTime requestDate; // 신청일
     @Column(name = "approveBy")
-    private String approvedBy; //결재자
+    private Long approvedBy; //결재자
     @Column(name = "vacation_status")
     private int status; //결재상태 0 대기 1 승인 2 거절
 

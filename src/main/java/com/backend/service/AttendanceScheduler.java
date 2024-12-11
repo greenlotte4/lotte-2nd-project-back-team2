@@ -19,12 +19,12 @@ public class AttendanceScheduler {
         attendanceService.markVacation();
         log.info("12시 연차 처리"+ LocalDateTime.now());
     }
-
-    @Scheduled(cron = "0 0 9 * * ?")
-    public void checkLateUsers(){
-        attendanceService.markAttendance("late");
-        log.info("9시 지각 체크 "+ LocalDateTime.now());
-    }
+//
+//    @Scheduled(cron = "0 41 9 * * ?")
+//    public void checkLateUsers(){
+//        attendanceService.markAttendance("late");
+//        log.info("9시 지각 체크 "+ LocalDateTime.now());
+//    }
 
     @Scheduled(cron = "0 0 14 * * ?")
     public void checkAbsent(){
