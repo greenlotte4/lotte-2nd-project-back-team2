@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Builder
 @Data
@@ -30,7 +31,7 @@ public class PostProjectDTO {
                 .title(title)
                 .type(type)
                 .status(1)
-                .columns(columns.stream().map(GetProjectColumnDTO::toEntity).toList())
+                .columns(columns.stream().map(GetProjectColumnDTO::toEntity).collect(Collectors.toList()))
                 .coworkers(coworkerEntities)
                 .build();
     }

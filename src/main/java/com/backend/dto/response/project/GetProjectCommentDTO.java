@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 public class GetProjectCommentDTO {
     private Long id;
 
+    private String user_id;
+
+    @ToString.Exclude
     private GetProjectTaskDTO task;
 
     private User user;
@@ -28,7 +31,9 @@ public class GetProjectCommentDTO {
     public ProjectComment toEntity() {
         return ProjectComment.builder()
                 .id(id)
-                .task(task.toProjectTask())
+                .content(content)
+                .rdate(rdate)
+                .user_id(user_id)
                 .build();
     }
 }

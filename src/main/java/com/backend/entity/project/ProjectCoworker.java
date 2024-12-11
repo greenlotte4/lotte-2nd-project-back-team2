@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.PersistenceCreator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
@@ -20,7 +23,7 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
     private Long id;
 
     @Setter
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
 
@@ -63,7 +66,6 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
     }
 
     public GetProjectCoworkerDTO toGetCoworkerDTO() {
-
         String group;
         if(!user.getGroupMappers().isEmpty()){
             group = user.getGroupMappers().get(0).getGroup().getName();

@@ -1,5 +1,6 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectCommentDTO;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,9 +22,11 @@ public class ProjectComment {
 
     @ToString.Exclude
     @Setter
-    @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "task_id")
     private ProjectTask task;
+
+    private String user_id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
@@ -32,4 +35,13 @@ public class ProjectComment {
 
     @CreationTimestamp
     private LocalDateTime rdate;
+
+    public GetProjectCommentDTO toDTO() {
+        return GetProjectCommentDTO.builder()
+                .id(id)
+                .user_id(user_id)
+                .content(content)
+                .rdate(rdate)
+                .build();
+    }
 }
