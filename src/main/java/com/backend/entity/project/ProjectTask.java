@@ -1,5 +1,6 @@
 package com.backend.entity.project;
 
+import com.backend.dto.response.project.GetProjectCoworkerDTO;
 import com.backend.dto.response.project.GetProjectSubTaskDTO;
 import com.backend.dto.response.project.GetProjectTaskDTO;
 import jakarta.persistence.*;
@@ -7,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -35,11 +37,21 @@ public class ProjectTask {
 
     private LocalDate duedate; // 마감일
 
-    @OneToMany
+    @Setter
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "task")
+    @Builder.Default
     private List<ProjectSubTask> subTasks = new ArrayList<>();
 
-    @OneToMany
+    @Setter
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "task")
+    @Builder.Default
     private List<ProjectComment> comments = new ArrayList<>();
+
+    @Setter
+    @OneToMany(cascade = CascadeType.PERSIST, orphanRemoval = true)
+    @JoinColumn(name = "task_id")
+    @Builder.Default
+    private List<ProjectCoworker> associate = new ArrayList<>();
 
 //    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
 //    private List<TaskTag> tags = new ArrayList<>();
@@ -53,6 +65,9 @@ public class ProjectTask {
                 .priority(priority)
                 .status(status)
                 .duedate(duedate)
+                .comments(comments.stream().map(ProjectComment::toDTO).collect(Collectors.toList()))
+                .subTasks(subTasks.stream().map(ProjectSubTask::toDTO).collect(Collectors.toList()))
+                .associate(associate.stream().map(ProjectCoworker::toGetCoworkerDTO).collect(Collectors.toList()))
                 .build();
     }
 
@@ -61,9 +76,15 @@ public class ProjectTask {
         subTasks.add(subtask);
         subtask.setTask(this);
     }
+
     public void addComment(ProjectComment comment) {
         if (comments == null) {comments = new ArrayList<>();}
         comments.add(comment);
         comment.setTask(this);
+    }
+
+    public void addAssociate(ProjectCoworker asso) {
+        if (associate == null) {associate = new ArrayList<>();}
+        associate.add(asso);
     }
 }

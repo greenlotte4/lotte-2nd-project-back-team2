@@ -18,7 +18,6 @@ public class GetProjectSubTaskDTO {
     public ProjectSubTask toEntity() {
         return ProjectSubTask.builder()
                 .id(id)
-                .task(ProjectTask.builder().id(taskId).build())
                 .isChecked(isChecked)
                 .name(name)
                 .build();
