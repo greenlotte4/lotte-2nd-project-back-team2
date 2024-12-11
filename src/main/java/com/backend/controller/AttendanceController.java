@@ -4,6 +4,7 @@ import com.backend.dto.request.user.ReqAttendanceDTO;
 import com.backend.dto.request.user.RequestVacationDTO;
 import com.backend.service.AttendanceService;
 import com.backend.service.UserService;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -30,14 +31,18 @@ public class AttendanceController {
     }
 
     @GetMapping("/week")
-    public ResponseEntity<?> getWeekAttendance(Authentication auth) {
+    public ResponseEntity<?> getWeekAttendance(
+            Authentication auth,
+            @RequestParam(name = "type",defaultValue = "0") int type
+    ) {
         Long uid = Long.parseLong(auth.getName());
-        return attendanceService.getWeekAttendance(uid);
+        return attendanceService.getWeekAttendance(uid, type);
     }
 
     @PostMapping("/searchDate")
     public ResponseEntity<?> searchAttendanceByDate(Authentication auth, @RequestBody ReqAttendanceDTO dto) {
         Long uid = Long.parseLong(auth.getName());
+        log.info("근태 기간별 검색 컨트롤러 "+uid+dto);
         return attendanceService.searchByDate(uid, dto);
     }
 

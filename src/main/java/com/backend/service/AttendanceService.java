@@ -256,33 +256,39 @@ public class AttendanceService {
         return times;
     }
 
-    public ResponseEntity<?> getWeekAttendance(Long userId) {
-//        LocalDate today = LocalDate.now();
-//        LocalDate oneWeekAgo = today.minusWeeks(1);
-//        log.info("시작 날짜 끝 날짜 1"+today+oneWeekAgo);
-//        String startDate = oneWeekAgo.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-//        String endDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-//        log.info("시작 날짜 끝 날짜 2"+startDate+endDate);
-//        List<AttendanceTime> attList = attendanceTimeRepository.findAllByUserIdAndDateBetween(userId, startDate, endDate );
-
-        List<AttendanceTime> attList = attendanceTimeRepository
-                .findTop7ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(userId);
+    public ResponseEntity<?> getWeekAttendance(Long userId, int type) {
+        log.info("타입 확인 "+type);
+        List<AttendanceTime> attList = new ArrayList<>();
+        if (type == 0){
+            attList = attendanceTimeRepository
+                    .findTop7ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(userId);
+        }else if (type == 1){
+            attList = attendanceTimeRepository
+                    .findTop14ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(userId);
+        }else{
+            attList = attendanceTimeRepository
+                    .findTop30ByUserIdAndCheckOutTimeIsNotNullOrderByDateDesc(userId);
+        }
 
         if(attList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("근무 기록을 찾을 수 없습니다.");
         }
 
-        log.info("일주일 근태 기록 레포지토리 실행 결과 "+attList.toString());
-        List<ResponseAttendanceDTO> dtos = attList.stream().map(att -> {
-            return ResponseAttendanceDTO.builder()
-                    .id(att.getId().toString())
+        log.info("기간별 근태 기록 레포지토리 실행 결과 "+attList.toString());
+        List<ResponseAttendanceDTO> dtos = new ArrayList<>();
+        attList.forEach(att -> {
+            ResponseAttendanceDTO ddd = ResponseAttendanceDTO.builder()
+                    .id(att.getId())
                     .userId(att.getUserId())
                     .date(att.getDate())
                     .checkInTime(att.getCheckInTime())
                     .checkOutTime(att.getCheckOutTime())
                     .status(att.getStatus())
                     .build();
-        }).toList();
+            log.info("디티오 변환 과정 "+ddd.toString());
+            dtos.add(ddd);
+        });
+        log.info("근태 검색 디티오 "+dtos.toString());
 
         return ResponseEntity.ok().body(dtos);
     }
@@ -290,22 +296,26 @@ public class AttendanceService {
     public ResponseEntity<?> searchByDate(Long uid, ReqAttendanceDTO dto) {
         String start = dto.getStartDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         String end = dto.getEndDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        List<AttendanceTime> attList = attendanceTimeRepository.findAllByUserIdAndDateBetween(uid, start, end);
+        List<AttendanceTime> attList = attendanceTimeRepository.findAllByUserIdAndDateBetweenInclusiveAndCheckOutTimeIsNotNull(uid, start, end);
         if(attList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("데이터가 없습니다.");
         }
-        log.info("일주일 근태 기록 레포지토리 실행 결과 "+attList.toString());
+        log.info("근태 검색 엔티티 "+attList.toString());
 
-        List<ResponseAttendanceDTO> dtos = attList.stream().map(att -> {
-            return ResponseAttendanceDTO.builder()
-                    .id(att.getId().toString())
-                    .userId(att.getUserId())
-                    .date(att.getDate())
-                    .checkInTime(att.getCheckInTime())
-                    .checkOutTime(att.getCheckOutTime())
-                    .status(att.getStatus())
-                    .build();
-        }).toList();
+        List<ResponseAttendanceDTO> dtos = new ArrayList<>();
+        attList.forEach(att -> {
+                    ResponseAttendanceDTO ddd = ResponseAttendanceDTO.builder()
+                            .id(att.getId())
+                            .userId(att.getUserId())
+                            .date(att.getDate())
+                            .checkInTime(att.getCheckInTime())
+                            .checkOutTime(att.getCheckOutTime())
+                            .status(att.getStatus())
+                            .build();
+                    log.info("디티오 변환 과정 "+ddd.toString());
+                    dtos.add(ddd);
+                });
+        log.info("근태 검색 디티오 "+dtos.toString());
         return ResponseEntity.ok().body(dtos);
     }
 }
