@@ -400,45 +400,80 @@ public class UserService {
     }
 
 
-//    public Boolean uploadProfile(Long userId, MultipartFile file) {
-//
-//        User user = userRepository.findById(userId);
-//
-//        String remoteDir = "uploads/profilImg";
-//        String originalFilename = file.getOriginalFilename();
-//        String savedFilename= folderService.generateSavedName(originalFilename);
-//        String path = remoteDir+"/"+savedFilename;
-//
-//        ReqProfileDTO dto = ReqProfileDTO.builder()
-//                .status(1)
-//                .path(path)
-//                .user(user)
-//                .rName(originalFilename)
-//                .sName(savedFilename)
-//                .message()
-//                .createdAt(LocalDateTime.now())
-//                .build();
-//
-//        ProfileImg saved = dto.toEntity();
-//
-//        // 임시 파일 생성
-//        File tempFile = null;
-//        try {
-//            // SFTP 업로드
-//            String remoteFilePath =  sftpService.uploadFile(tempFile.getAbsolutePath(), remoteDir, savedFilename);
-//
-//            // 업로드된 파일 정보 저장
-//            profileImgRepository.save(saved);
-//        } catch ( Exception e) {
-//            log.error("임시 파일 생성 또는 전송 중 오류 발생: {}", e.getMessage());
-//        } finally {
-//            if (tempFile != null && tempFile.exists()) {
-//                if (tempFile.delete()) {
-//                    log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
-//                } else {
-//                    log.warn("임시 파일 삭제 실패: {}", tempFile.getAbsolutePath());
-//                }
-//            }
-//        }
-//        ProfileImg savedFile =  profileImgRepository.save(saved);
+    public Boolean uploadProfile(Long userId, MultipartFile file) {
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
+        log.info("프로필 업로드 "+user);
+
+        ProfileImg profileImg = user.getProfileImg();
+        String remoteDir = "uploads/profilImg";
+        String originalFilename = file.getOriginalFilename();
+        String savedFilename = generateSavedName(originalFilename);
+        String path = remoteDir + "/" + savedFilename;
+        log.info("경로 확인 "+path);
+
+        ReqProfileDTO dto = ReqProfileDTO.builder()
+                .status(1)
+                .path(path)
+                .user(user)
+                .rName(originalFilename)
+                .sName(savedFilename)
+                .message(profileImg.getMessage())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        if(profileImg!=null){
+            sftpService.delete(path);
+            dto.setProfileImgId(profileImg.getProfileImgId());
+            log.info("이미 있는 프로필 이미지 파일서버에서 삭제함");
+        }
+        log.info("디티오 확인 "+dto);
+        ProfileImg saved = dto.toEntity();
+
+        // 임시 파일 생성
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile("upload_", "_" + originalFilename);
+            file.transferTo(tempFile); // MultipartFile 데이터를 임시 파일로 저장
+            log.info("이게 뭘까? 임시 파일 경로 확인 "+tempFile.getAbsolutePath());
+            // SFTP 업로드
+            String remoteFilePath = sftpService.uploadFile(tempFile.getAbsolutePath(), remoteDir, savedFilename);
+
+            // 업로드된 파일 정보 저장
+            profileImgRepository.save(saved);
+        } catch (Exception e) {
+            log.error("임시 파일 생성 또는 전송 중 오류 발생: {}", e.getMessage());
+        } finally {
+            if (tempFile != null && tempFile.exists()) {
+                if (tempFile.delete()) {
+                    log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
+                } else {
+                    log.warn("임시 파일 삭제 실패: {}", tempFile.getAbsolutePath());
+                }
+            }
+        }
+        ProfileImg savedFile = profileImgRepository.save(saved);
+        return true;
+
+    }
+
+
+    public String generateSavedName(String originalName) {
+        // Validate input
+        if (originalName == null || originalName.isEmpty()) {
+            throw new IllegalArgumentException("Original file name cannot be null or empty");
+        }
+
+        // Extract file extension
+        String extension = "";
+        int dotIndex = originalName.lastIndexOf(".");
+        if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
+            extension = originalName.substring(dotIndex);
+        }
+
+        // Generate UUID and append extension
+        String uuid = UUID.randomUUID().toString();
+        return uuid + extension;
+    }
+
 }
