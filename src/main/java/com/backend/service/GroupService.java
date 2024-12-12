@@ -593,5 +593,11 @@ public class GroupService {
         return ResponseEntity.ok("삭제완료");
     }
 
+    public long getGroupSize(Long id){
+
+          Long size=  groupMapperRepository.countGroupMapperByGroup_Id(id);
+          return size;
+    }
+
 
 }

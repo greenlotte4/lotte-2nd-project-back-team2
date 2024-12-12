@@ -140,4 +140,12 @@ public class GroupController {
 
         return ResponseEntity.ok().body(map);
     }
+
+    @GetMapping("/groups/size/{groupId}")
+    public ResponseEntity<?> groupSize(@PathVariable Long groupId){
+
+        long size = groupService.getGroupSize(groupId);
+
+        return  ResponseEntity.ok().body(size);
+    }
 }

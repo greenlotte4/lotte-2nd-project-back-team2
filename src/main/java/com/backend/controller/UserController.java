@@ -118,6 +118,7 @@ public class UserController {
         return ResponseEntity.ok(id);
     }
 
+
     @GetMapping("/my/user")
     public ResponseEntity<?> getMyUser (Authentication auth){
         Long userId = Long.valueOf(auth.getName());
