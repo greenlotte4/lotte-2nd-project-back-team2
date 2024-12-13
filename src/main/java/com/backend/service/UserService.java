@@ -488,7 +488,7 @@ public class UserService {
         UserDto userDto= user.toSliceDto();
         userDto.setName(user.getName());
         userDto.setEmail(user.getEmail());
-        userDto.setProfileImg("나중에 url");
+        userDto.setProfileImgPath("나중에 url");
         if(group != null){
             String department = group.getName();
             long groupId = group.getId();
