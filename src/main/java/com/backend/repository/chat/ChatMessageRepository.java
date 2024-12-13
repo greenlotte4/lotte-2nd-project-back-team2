@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends MongoRepository<ChatMessageDocument, String> {
@@ -23,6 +24,6 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessageDocume
     // 읽지 않은 메시지 카운트
     long countByRoomIdAndTimeStampAfter(String chatRoomId, LocalDateTime timestamp);
 
-    ChatMessageDocument findFirstByRoomIdOrderByTimeStampDesc(String chatRoomId);
+    Optional<ChatMessageDocument> findFirstByRoomIdOrderByTimeStampDesc(String chatRoomId);
 }
 
