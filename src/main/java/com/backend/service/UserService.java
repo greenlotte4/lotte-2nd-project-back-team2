@@ -400,61 +400,64 @@ public class UserService {
         return userDto;
     }
 
- public Boolean uploadProfile(Long userId, MultipartFile file) {
+    public Boolean uploadProfile(Long userId, MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
+        log.info("프로필 업로드 유저 정보 조회 {}", user);
 
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
-        log.info("프로필 업로드 "+user);
-
-        ProfileImg profileImg = user.getProfileImg();
         String remoteDir = "uploads/profilImg";
         String originalFilename = file.getOriginalFilename();
         String savedFilename = generateSavedName(originalFilename);
         String path = remoteDir + "/" + savedFilename;
-        log.info("경로 확인 "+path);
+        log.info("경로 확인 {}", path);
 
-        ReqProfileDTO dto = ReqProfileDTO.builder()
-                .status(1)
-                .path(path)
-                .user(user)
-                .rName(originalFilename)
-                .sName(savedFilename)
-                .message(profileImg.getMessage())
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 기존 프로필 이미지 삭제 경로 확인
+        String deletePath = user.getProfileImgPath() != null
+                ? remoteDir + "/" + user.getProfileImgPath()
+                : null;
 
-        if(profileImg!=null){
-            sftpService.delete(path);
-            dto.setProfileImgId(profileImg.getProfileImgId());
-            log.info("이미 있는 프로필 이미지 파일서버에서 삭제함");
-        }
-        log.info("디티오 확인 "+dto);
-        ProfileImg saved = dto.toEntity();
-
-        // 임시 파일 생성
+        // 임시 파일 생성 및 SFTP 업로드
         File tempFile = null;
         try {
             tempFile = File.createTempFile("upload_", "_" + originalFilename);
-            file.transferTo(tempFile); // MultipartFile 데이터를 임시 파일로 저장
-            log.info("이게 뭘까? 임시 파일 경로 확인 "+tempFile.getAbsolutePath());
-            // SFTP 업로드
-            String remoteFilePath = sftpService.uploadFile(tempFile.getAbsolutePath(), remoteDir, savedFilename);
+            file.transferTo(tempFile);
+            log.info("임시 파일 생성: {}", tempFile.getAbsolutePath());
 
-            // 업로드된 파일 정보 저장
-            profileImgRepository.save(saved);
+            // SFTP 업로드
+            sftpService.uploadFile(tempFile.getAbsolutePath(), remoteDir, savedFilename);
+
+            // 기존 프로필 이미지 삭제
+            if (deletePath != null) {
+                sftpService.delete(deletePath);
+                log.info("기존 프로필 이미지 삭제 완료: {}", deletePath);
+                profileImgRepository.deleteByUserId(user.getId());
+            }
+
+            // 새 프로필 이미지 정보 저장
+            ProfileImg profileImg = ProfileImg.builder()
+                    .userId(userId)
+                    .path(path)
+                    .status(1)
+                    .rName(originalFilename)
+                    .sName(savedFilename)
+                    .message(null)
+                    .build();
+            profileImgRepository.save(profileImg);
+
+            // 유저 엔티티에 프로필 이미지 경로 업데이트
+            user.updateProfileImg(savedFilename);
+            userRepository.save(user);
+
+            log.info("프로필 업로드 및 저장 완료: {}", profileImg);
+            return true;
         } catch (Exception e) {
-            log.error("임시 파일 생성 또는 전송 중 오류 발생: {}", e.getMessage());
+            log.error("프로필 업로드 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("프로필 업로드에 실패했습니다.", e);
         } finally {
-            if (tempFile != null && tempFile.exists()) {
-                if (tempFile.delete()) {
-                    log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
-                } else {
-                    log.warn("임시 파일 삭제 실패: {}", tempFile.getAbsolutePath());
-                }
+            if (tempFile != null && tempFile.exists() && tempFile.delete()) {
+                log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
             }
         }
-        ProfileImg savedFile = profileImgRepository.save(saved);
-        return true;
-
     }
 
 

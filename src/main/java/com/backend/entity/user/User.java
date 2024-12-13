@@ -99,8 +99,8 @@ public class User {
     @Column(name = "outsourcing_id")
     private Long outsourcingId;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = "user")
-    private ProfileImg profileImg;
+    @Column(name = "profile_img_path")
+    private String profileImgPath; // 프로필 이미지의 sName (파일명)
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     @ToString.Exclude
@@ -210,7 +210,7 @@ public class User {
                 .paymentId(this.paymentId)
                 .day(this.day)
 //                .groupMappers(this.groupMappers)
-                .profileImg(this.profileImg != null ? this.profileImg.getSName() : "default.png") // 기본값 설정
+                .profileImgPath(this.profileImgPath != null ? this.profileImgPath : "uploads/profilImg/Default.png") // 기본값 설정
                 .createAt(this.createAt)
                 .lastLogin(this.lastLogin)
                 .joinDate(this.joinDate)
@@ -291,5 +291,9 @@ public class User {
 
     public void updateLoginDate(LocalDateTime now) {
         this.lastLogin = now;
+    }
+
+    public void updateProfileImg(String profileImgPath) {
+        this.profileImgPath = profileImgPath;
     }
 }

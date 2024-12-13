@@ -26,7 +26,7 @@ public class ReqProfileDTO {
 
     private String path; // 실제 저장된 파일 경로 (서버 디렉토리 또는 클라우드 URL)
 
-    private User user; // 프로필도
+    private Long userId; // 프로필도
 
     private String rName;
 
@@ -41,7 +41,7 @@ public class ReqProfileDTO {
                 .profileImgId(profileImgId)
                 .status(status)
                 .path(path)
-                .user(user)
+                .userId(userId)
                 .rName(rName)
                 .sName(sName)
                 .message(message)

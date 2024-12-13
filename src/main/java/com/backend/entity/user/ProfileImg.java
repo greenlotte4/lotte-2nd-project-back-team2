@@ -24,9 +24,8 @@ public class ProfileImg {
     @Column(nullable = false)
     private String path; // 실제 저장된 파일 경로 (서버 디렉토리 또는 클라우드 URL)
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
-    private User user; // 프로필도
+    @Column(name = "user_id", nullable = false)
+    private Long userId; // 프로필도
 
     @Column(name = "r_name")
     private String rName;
