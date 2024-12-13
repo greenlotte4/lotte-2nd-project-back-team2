@@ -12,6 +12,7 @@ import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -21,6 +22,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class PostDTO {
+
+
+    private Long postId;
+
+    private String writer;
 
     private String title;
 
@@ -38,6 +44,10 @@ public class PostDTO {
 
     private String uid; // 작성자 정보
 
+    private String boardName;
+
     private LocalDateTime createdAt; // 생성 날짜
 
+    public void setBoardName(String boardName) {
+    }
 }

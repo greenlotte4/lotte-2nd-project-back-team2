@@ -20,7 +20,7 @@ import java.util.List;
 @ToString
 @Getter
 @Builder
-@Table(name = "user_group")
+@Table(name = "`user_group`")
 public class Group {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

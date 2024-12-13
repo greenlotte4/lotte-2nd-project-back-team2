@@ -7,6 +7,7 @@ package com.backend.entity.community;
 
 import com.backend.dto.community.BoardDTO;
 import com.backend.entity.group.Group;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,17 +18,19 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "Board")
 public class Board extends BaseTimeEntity{
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "board_id")
     private Long boardId; // 게시판 ID
 
     private int status; // 1 공지사항 2 익명게시판 3 자유게시판 4 자료실 5 오늘의 식단 6 부서별 게시판
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JoinColumn(name = "group_id", nullable = true)
+    @JsonIgnore
     private Group group;
 
     @Column(nullable = false, unique = true)
