@@ -114,29 +114,29 @@ public class RegisterController {
                 cardInfo = userService.insertPayment(paymentInfoDTO);
             }
 
-            if (cardInfo != null) {
-                log.info("카드 엔티티: {}", cardInfo);
-                dto.setPaymentId(cardInfo.getCardId());
-            }
 
             User insertUser = userService.insertUser(dto);
             if (insertUser == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Not Create");
             }
 
-            cardInfo.updateUserid(insertUser.getId());
+            if (cardInfo != null) {
+                log.info("카드 엔티티: {}", cardInfo);
+                dto.setPaymentId(cardInfo.getCardId());
+                cardInfo.updateUserid(insertUser.getId());
+            }
             attendanceService.insertAttendance(insertUser);
 
             // 12.12 전규찬 채팅용 유저 등록 기능 추가
             User user = userService.getUserByuid(dto.getUid());
-            String groupName = groupService.findGroupNameByUser(user);
+//            String groupName = groupService.findGroupNameByUser(user);
 
             ChatMemberDocument chatMemberDocument = ChatMemberDocument.builder()
                     .uid(dto.getUid())
                     .name(dto.getName())
                     .email(dto.getEmail())
                     .level(dto.getGrade())
-                    .group(groupName)
+//                    .group(groupName)
                     .build();
 
             ChatMemberDocument savedDocument = chatService.saveChatMember(chatMemberDocument);
