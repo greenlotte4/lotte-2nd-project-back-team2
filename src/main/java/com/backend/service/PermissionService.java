@@ -88,8 +88,7 @@ public class PermissionService {
 
 
     //mysql 권한 저장
-    public Permission savePermission(String id,long userId, String type, String permissionType) {
-        User user = userRepository.findById(userId).orElse(null);
+    public Permission savePermission(String id,User user, String type, String permissionType) {
         Permission permission = Permission.builder()
                 .type(type)
                 .permissions(permissionType)

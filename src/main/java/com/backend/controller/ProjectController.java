@@ -57,24 +57,20 @@ public class ProjectController {
 
 
     @MessageMapping("/project/{id}/column/post") // 프로젝트 컬럼 생성
-    public ResponseEntity<?> createColumn(@DestinationVariable Long id, @Payload GetProjectColumnDTO dto) {
+    public void createColumn(@DestinationVariable Long id, @Payload GetProjectColumnDTO dto) {
         ProjectColumn column = projectService.addColumn(dto, id);
-        return ResponseEntity.ok().body(column.toGetProjectColumnDTO());
+        messagingTemplate.convertAndSend("/topic/project/"+id+"/column",column.toGetProjectColumnDTO());
     }
-    @MessageMapping("/project/task/post")
-    public ResponseEntity<?> upsertTask(@Payload GetProjectTaskDTO dto) { // 태스크 생성, 수정
+    @MessageMapping("/project/{id}/task/post")
+    public void upsertTask(@DestinationVariable Long id, @Payload GetProjectTaskDTO dto) { // 태스크 생성, 수정
         log.info("GetProjectTaskDTO: {}",dto);
         ProjectTask task = projectService.saveTask(dto);
-        return ResponseEntity.ok().body(task.toGetProjectTaskDTO());
+        messagingTemplate.convertAndSend("/topic/project/"+id+"/task",task.toGetProjectTaskDTO());
     }
     @MessageMapping("/project/coworkers/update") // 프로젝트 작업자 목록 수정
-    public ResponseEntity<String> updateCoworkers(@Payload PatchCoworkersDTO dto) {
-        try {
-            projectService.updateCoworkers(dto);
-            return ResponseEntity.ok("작업자 목록이 성공적으로 수정되었습니다.");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("작업자 목록 수정 중 오류가 발생했습니다.");
-        }
+    public void updateCoworkers(@Payload PatchCoworkersDTO dto) {
+        projectService.updateCoworkers(dto);
+        messagingTemplate.convertAndSend("/topic/project/"+dto.getProjectId()+"/coworkers", dto);
     }
     @MessageMapping("/project/sub/post")
     public ResponseEntity<?> createSubTask(@Payload GetProjectSubTaskDTO dto){

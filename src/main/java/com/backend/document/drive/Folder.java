@@ -45,6 +45,8 @@ public class Folder {
 
     @Builder.Default
     private String sharedUser = "[]";
+    @Builder.Default
+    private String sharedDept = "[]";
 
     @Builder.Default
     private int isPinned = 0; // 1: 고정 폴더
@@ -64,6 +66,7 @@ public class Folder {
                 .updatedAt(this.updatedAt)
                 .isShared(this.isShared)
                 .sharedUser(this.sharedUser)
+                .sharedDept(this.sharedDept)
                 .linkSharing(this.linkSharing)
                 .status(this.status)
                 .isPinned(this.isPinned)

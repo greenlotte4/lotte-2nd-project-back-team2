@@ -135,7 +135,9 @@ public class UserController {
     public ResponseEntity<?> uploadProfile(Authentication auth,
                                            @RequestParam("file") MultipartFile file
     ){
-        log.info("프로필 업로드 컨트롤러 ");
+        log.info("프로필 업로드 컨트롤러 "+file);
+        log.info("프로필 업로드 컨트롤러 "+file.getOriginalFilename());
+        log.info("프로필 업로드 컨트롤러 "+file.getName());
         Long userId = Long.valueOf(auth.getName());
         try {
             Boolean result = userService.uploadProfile(userId, file);

@@ -32,10 +32,6 @@ public interface GroupMapperRepository extends JpaRepository<GroupMapper, Long> 
 
     List<GroupMapper> findAllByGroupOrderByUser_LevelDesc(Group group);
 
-
-    @Query("SELECT gm.group FROM GroupMapper gm WHERE gm.user.uid = :uid")
-    List<Group> findGroupsByUserUid(@Param("uid") String uid);
-
     Optional<GroupMapper> findGroupByUserUid(String uid);
 
      Long countGroupMapperByGroup_Id(Long groupId);

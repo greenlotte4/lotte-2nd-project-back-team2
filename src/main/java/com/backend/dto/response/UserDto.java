@@ -43,7 +43,7 @@ public class UserDto {
     private LocalDateTime createAt;
     private LocalDateTime lastLogin;
     private LocalDate joinDate;
-    private String profileImg;
+    private String profileImgPath;
     private String department;
     @ToString.Exclude
     private List<Attendance> attendance;
