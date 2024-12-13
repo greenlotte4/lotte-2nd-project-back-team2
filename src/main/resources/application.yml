@@ -47,6 +47,14 @@ spring:
                     starttls:
                         enable: true
         default-encoding: UTF-8
+    mvc:
+        cors:
+            allowed-origins:
+                - http://13.124.94.213:90
+                - http://localhost:3000
+            allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
 file-server:
     url: 3.35.170.26
 token:

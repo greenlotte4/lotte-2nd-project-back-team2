@@ -60,6 +60,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers("/api/send-product-service").permitAll()
                         .requestMatchers("/api/send-payment").permitAll()
                         .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/ws-alert/**").permitAll()
                         .anyRequest().permitAll()
                 )
                 .build();
@@ -67,19 +68,18 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     @Bean
     protected CorsConfigurationSource corsConfigurationSource(){
-        CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:8010", "http://13.124.94.213:90"));
-        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        corsConfiguration.addAllowedHeader("Authorization");
-        corsConfiguration.addAllowedHeader("Content-Type");
-        corsConfiguration.addAllowedHeader("Accept");
-        corsConfiguration.addAllowedHeader("X-Requested-With");
-        corsConfiguration.addAllowedHeader("Cache-Control");
-        corsConfiguration.addAllowedHeader("X-Custom-Header");
-        corsConfiguration.setAllowCredentials(true); // 쿠키 허용
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://13.124.94.213:90",
+            "http://13.124.94.213"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
