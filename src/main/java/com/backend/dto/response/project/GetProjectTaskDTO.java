@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public class GetProjectTaskDTO {
     private Long id;
 
+    private Long ProjectId;
     private Long columnId;
 
     private String title; // 할일

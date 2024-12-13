@@ -59,6 +59,7 @@ public class ProjectTask {
     public GetProjectTaskDTO toGetProjectTaskDTO() {
         return GetProjectTaskDTO.builder()
                 .id(id)
+                .ProjectId(column.getProject().getId())
                 .columnId(column.getId())
                 .title(title)
                 .content(content)
@@ -86,5 +87,18 @@ public class ProjectTask {
     public void addAssociate(ProjectCoworker asso) {
         if (associate == null) {associate = new ArrayList<>();}
         associate.add(asso);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true; // 같은 객체 참조인 경우
+        if (o == null || getClass() != o.getClass()) return false; // 클래스가 다르거나 null이면 false
+        ProjectTask that = (ProjectTask) o;
+        return Objects.equals(id, that.id); // id가 동일한 경우 true
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id); // id 기반의 해시코드
     }
 }

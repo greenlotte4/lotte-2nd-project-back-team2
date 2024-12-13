@@ -11,9 +11,12 @@ import lombok.*;
 public class GetProjectSubTaskDTO {
 
     private Long id;
-    private Long taskId;
     private boolean isChecked; // 리스트 체크 여부
     private String name; // 이름
+
+    private Long taskId;
+    private Long columnId;
+    private Long projectId;
 
     public ProjectSubTask toEntity() {
         return ProjectSubTask.builder()

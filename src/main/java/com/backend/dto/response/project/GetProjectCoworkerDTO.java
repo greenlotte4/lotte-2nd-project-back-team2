@@ -27,6 +27,10 @@ public class GetProjectCoworkerDTO {
     private boolean canDeleteTask; // 삭제 권한
     private boolean canEditProject; // 프로젝트 전체 권한
 
+    private Long taskId;
+    private Long columnId;
+    private Long projectId;
+
     public ProjectCoworker toProjectCoworker() {
         return ProjectCoworker.builder()
                 .id(id)

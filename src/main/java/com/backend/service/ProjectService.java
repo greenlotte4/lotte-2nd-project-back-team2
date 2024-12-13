@@ -2,28 +2,23 @@ package com.backend.service;
 
 import com.backend.dto.request.project.PatchCoworkersDTO;
 import com.backend.dto.request.project.PostProjectDTO;
-import com.backend.dto.response.admin.project.GetProjectLeaderDetailDto;
 import com.backend.dto.response.admin.project.GetProjectLeaderDto;
 import com.backend.dto.response.admin.project.GetProjects;
-import com.backend.dto.response.project.GetProjectColumnDTO;
-import com.backend.dto.response.project.GetProjectDTO;
-import com.backend.dto.response.project.GetProjectSubTaskDTO;
-import com.backend.dto.response.project.GetProjectTaskDTO;
+import com.backend.dto.response.project.*;
 import com.backend.dto.response.user.GetUsersAllDto;
-import com.backend.entity.calendar.CalendarMapper;
 import com.backend.entity.group.Group;
-import com.backend.entity.group.GroupLeader;
 import com.backend.entity.group.GroupMapper;
 import com.backend.entity.project.*;
 import com.backend.entity.user.User;
-import com.backend.repository.GroupLeaderRepository;
 import com.backend.repository.GroupRepository;
 import com.backend.repository.UserRepository;
-import com.backend.repository.calendar.CalendarMapperRepository;
 import com.backend.repository.project.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +45,7 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class ProjectService {
+
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final ProjectRepository projectRepository;
@@ -57,6 +53,18 @@ public class ProjectService {
     private final ProjectColumnRepository columnRepository;
     private final ProjectTaskRepository taskRepository;
     private final ProjectSubTaskRepository subTaskRepository;
+
+
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public void sendBoardUpdate(Long projectId, String eventType, Object payload) {
+        String destination = "/topic/project/" + projectId + "/update";
+        WebSocketEventMessage message = new WebSocketEventMessage(eventType, payload);
+        messagingTemplate.convertAndSend(destination, message);
+    }
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public Project createProject(PostProjectDTO postDTO, String username) {
 
@@ -174,22 +182,27 @@ public class ProjectService {
         return ResponseEntity.ok(projectLeaderDto);
     }
 
-    public ProjectColumn addColumn(GetProjectColumnDTO columnDTO, Long projectId) {
+    public GetProjectColumnDTO addColumn(GetProjectColumnDTO columnDTO, Long projectId) {
         ProjectColumn col = columnDTO.toEntityAddProject(projectId);
         Project pj = projectRepository.findById(projectId).orElseThrow();
         pj.addColumn(col);
-        return col;
+        return col.toGetProjectColumnDTO();
     }
 
-    public ProjectTask saveTask(GetProjectTaskDTO taskDTO) {
+    public GetProjectTaskDTO saveTask(GetProjectTaskDTO taskDTO) {
         ProjectTask task = taskDTO.toProjectTask();
         log.info("saveTask 1 : " + task);
         ProjectColumn col = columnRepository.findById(task.getColumn().getId())
                 .orElseThrow(() -> new RuntimeException("Column not found"));
         col.addTask(task);
+        if (task.getId() == null) {
+            task = taskRepository.save(task);  // 새 task 저장
+        }
+        entityManager.merge(col);
+
         log.info("saveTask 2 : " + task);
         log.info("saveTask 3 : " + col);
-        return task;
+        return task.toGetProjectTaskDTO();
     }
 
     public void updateCoworkers(PatchCoworkersDTO dto) {
@@ -222,23 +235,21 @@ public class ProjectService {
         task.addSubTask(entity);
         return entity.toDTO();
     }
-    public boolean clickSubTask(Long id){
+    public void clickSubTask(Long id){
         ProjectSubTask subTask = subTaskRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("작업자를 찾을 수 없습니다. ID: " + id));
         subTask.click();
-        return subTask.isChecked();
     }
 
-    public boolean delete(String type, Long id) {
+    public void delete(String type, Long id) {
         try {
             switch (type) {
+                case "subtask" -> subTaskRepository.deleteById(id);
                 case "task" -> taskRepository.deleteById(id);
                 case "column" -> columnRepository.deleteById(id);
                 case "project" -> projectRepository.deleteById(id);
             }
-            return true;
         }catch (Exception e){
             log.error(e.getMessage());
-            return false;
         }
     }
 
