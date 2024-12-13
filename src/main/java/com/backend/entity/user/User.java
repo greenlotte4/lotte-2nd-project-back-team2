@@ -61,6 +61,12 @@ public class User {
     @Column(name = "name")
     private String name;
 
+//    @Column(name = "first_name")
+//    private String firstName;
+//
+//    @Column(name = "last_name")
+//    private String lastName;
+
     @Column(name = "city")
     private String addr1;
 

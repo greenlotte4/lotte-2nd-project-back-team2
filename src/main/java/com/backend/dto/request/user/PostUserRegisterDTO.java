@@ -17,6 +17,8 @@ public class PostUserRegisterDTO {
     private String email;
     private String hp;
     private String name;
+//    private String firstName;
+//    private String lastName;
     private String country;
     private String addr1;
     private String addr2;
