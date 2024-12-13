@@ -64,4 +64,25 @@ public class EmailController {
                 .body(Map.of("message", "문의 전송에 실패했습니다."));
         }
     }
+    
+    @PostMapping("/send-payment")
+    public ResponseEntity<?> sendPaymentEmail(@RequestBody PaymentRequestDto request) {
+        try {
+            log.debug("Received payment email request: {}", request);
+            
+            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("message", "이메일 주소는 필수 항목입니다."));
+            }
+            
+            emailService.sendPaymentEmail(request);
+            return ResponseEntity.ok()
+                .body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
+                
+        } catch (Exception e) {
+            log.error("이메일 전송 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "문의 전송에 실패했습니다: " + e.getMessage()));
+        }
+    }
 }

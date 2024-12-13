@@ -185,4 +185,57 @@ public class EmailService {
             throw new RuntimeException("이메일 전송에 실패했습니다.", e);
         }
     }
+
+    // 결제 문의 이메일 전송 메서드
+    public void sendPaymentEmail(PaymentRequestDto request) {
+        try {
+            if (request == null) {
+                throw new IllegalArgumentException("요청 데이터가 null입니다.");
+            }
+            
+            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                throw new IllegalArgumentException("이메일 주소가 필요합니다.");
+            }
+            
+            log.info("결제 문의 이메일 전송 시작: {}", request.getEmail());
+            log.debug("결제 문의 데이터: {}", request.toString());
+            
+            String subject = "[결제 문의] " + (request.getTitle() != null ? request.getTitle() : "제목 없음");
+            String content = String.format("""
+                <h2>결제 문의가 접수되었습니다</h2>
+                <p>안녕하세요, %s님.</p>
+                <p>접수시간: %s</p>
+                <hr>
+                <p><strong>주문번호:</strong> %s</p>
+                <p><strong>결제금액:</strong> %d원</p>
+                <p><strong>결제방법:</strong> %s</p>
+                <p><strong>결제일자:</strong> %s</p>
+                <p><strong>문의유형:</strong> %s</p>
+                <p><strong>문의내용:</strong></p>
+                <p>%s</p>
+                """,
+                request.getName() != null ? request.getName() : "고객",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                request.getOrderNumber(),
+                request.getPaymentAmount(),
+                request.getPaymentMethod(),
+                request.getPaymentDate(),
+                request.getInquiryType(),
+                request.getContent()
+            );
+            
+            sendEmail(
+                new String[]{request.getEmail(), fromEmail},
+                subject,
+                content,
+                null
+            );
+            
+            log.info("결제 문의 이메일 전송 성공");
+            
+        } catch (Exception e) {
+            log.error("이메일 전송 실패. 에러 메시지: {}", e.getMessage());
+            throw new RuntimeException("이메일 전송에 실패했습니다.", e);
+        }
+    }
 }
