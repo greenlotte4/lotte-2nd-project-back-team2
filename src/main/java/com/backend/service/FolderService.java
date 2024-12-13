@@ -145,6 +145,8 @@ public class FolderService {
                         .createdAt(folder.getCreatedAt())
                         .isShared(folder.getIsShared())
                         .isPinned(folder.getIsPinned())
+                        .sharedDept(folder.getSharedDept())
+                        .sharedUser(folder.getSharedUser())
                         .status(folder.getStatus())
                         .linkSharing(folder.getLinkSharing())
                         .updatedAt(folder.getUpdatedAt())

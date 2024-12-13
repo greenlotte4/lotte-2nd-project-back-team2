@@ -486,12 +486,18 @@ public class UserService {
                 .findFirst()
                 .orElse(null);
         UserDto userDto= user.toSliceDto();
+        userDto.setName(user.getName());
+        userDto.setEmail(user.getEmail());
+        userDto.setProfileImg("나중에 url");
         if(group != null){
             String department = group.getName();
             long groupId = group.getId();
             userDto.setDepartment(department);
             userDto.setGroupId(groupId);
+
         }
         return userDto;
     }
+
+
 }

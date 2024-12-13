@@ -37,5 +37,6 @@ public class FolderDto {
     private String path;
     private int size;
     private String sharedUser;
+    private String sharedDept;
     private String parentPath;
 }
