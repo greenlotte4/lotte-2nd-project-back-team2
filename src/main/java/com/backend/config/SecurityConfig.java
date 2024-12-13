@@ -53,9 +53,12 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/message/unread-messages").permitAll()
+                        .requestMatchers("/api/send-qna").permitAll()
+                        .requestMatchers("/api/send-cancellation").permitAll()
+                        .requestMatchers("/api/send-product-service").permitAll()
+                        .requestMatchers("/api/send-payment").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
