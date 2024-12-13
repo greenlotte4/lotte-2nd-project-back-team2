@@ -108,8 +108,6 @@ public class DriveController {
         if(uid == null) {
             uid= (String) request.getAttribute("uid");
         }
-        uid="worker1";
-        log.info("uid1!!"+uid);
 
         if (uid == null || uid.isEmpty()) {
             return ResponseEntity.badRequest().body("UID is required.");
