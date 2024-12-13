@@ -18,6 +18,7 @@ import com.backend.dto.request.email.CancellationRequestDto;
 import com.backend.dto.request.email.ProductServiceRequestDto;
 import com.backend.dto.request.email.PaymentRequestDto;
 import com.backend.service.EmailService;
+import com.backend.service.WebSocketService;
 
 import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
@@ -30,6 +31,9 @@ public class EmailController {
     
     @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    private WebSocketService webSocketService;
     
     @PostMapping("/send-qna")
     public ResponseEntity<?> sendQnaEmail(@ModelAttribute QnaRequestDto request) {
@@ -68,17 +72,15 @@ public class EmailController {
     @PostMapping("/send-payment")
     public ResponseEntity<?> sendPaymentEmail(@RequestBody PaymentRequestDto request) {
         try {
-            log.debug("Received payment email request: {}", request);
-            
-            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("message", "이메일 주소는 필수 항목입니다."));
-            }
-            
             emailService.sendPaymentEmail(request);
+            String notificationMessage = String.format(
+                "새로운 결제 문의가 접수되었습니다. [고객명: %s, 주문번호: %s]",
+                request.getName(),
+                request.getOrderNumber()
+            );
+            webSocketService.sendNotification(notificationMessage);
             return ResponseEntity.ok()
                 .body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
-                
         } catch (Exception e) {
             log.error("이메일 전송 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
