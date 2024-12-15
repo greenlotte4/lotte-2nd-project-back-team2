@@ -1,6 +1,8 @@
 package com.backend.controller;
 
 import com.backend.dto.request.user.PostUserAlarmDto;
+import com.backend.dto.response.user.RespHeaderUserDTO;
+import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
 import com.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,8 +37,13 @@ public class MainController {
         } else {
             id= 0L;
         }
-        String username = userRepository.findById(id).get().getName();
-        return ResponseEntity.ok(username);
+        User user = userRepository.findById(id).get();
+
+        RespHeaderUserDTO header = RespHeaderUserDTO.builder()
+                    .name(user.getName())
+                    .profileImgPath(user.getProfileImgPath())
+                    .build();
+        return ResponseEntity.ok(header);
     }
 
 }

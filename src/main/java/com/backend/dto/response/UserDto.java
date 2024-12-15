@@ -47,6 +47,8 @@ public class UserDto {
     private String department;
     @ToString.Exclude
     private List<Attendance> attendance;
+    private String profileMessage;
+    private String levelString;
 
     //추가필드
     private Long groupId;
