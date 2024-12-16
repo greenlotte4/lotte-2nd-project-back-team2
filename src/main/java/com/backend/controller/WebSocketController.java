@@ -13,6 +13,8 @@ import com.backend.dto.response.calendar.GetCalendarNameDto;
 import com.backend.dto.response.calendar.GetCalendarsDto;
 import com.backend.dto.response.calendar.GetMessagePostCalendarDto;
 import com.backend.dto.response.page.MessagePageDto;
+import com.backend.dto.response.page.MessageUsersDto;
+import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarContent;
 import com.backend.entity.calendar.CalendarMapper;
@@ -23,6 +25,7 @@ import com.backend.repository.calendar.CalendarMapperRepository;
 import com.backend.repository.calendar.CalendarRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -174,19 +177,35 @@ public class WebSocketController {
         System.out.println(message);
         ObjectMapper objectMapper = new ObjectMapper();
         MessagePageDto messageMap = objectMapper.readValue(message, MessagePageDto.class);
-        System.out.println(messageMap.getSelectId());
-        System.out.println(messageMap.getSendData());
-        System.out.println(messageMap.getUserId());
+//        messageMap.setUid(uid);
+        System.out.println(messageMap.getContent());
+        System.out.println(messageMap.getPageId());
+        System.out.println(messageMap.getType());
         System.out.println("sadkfljasdkfjllsaf");
 
-        messagingTemplate.convertAndSend("/topic/page/"+messageMap.getSelectId(), messageMap);
+        messagingTemplate.convertAndSend("/topic/page/" + messageMap.getPageId(), messageMap);
+    }
+
+    @MessageMapping("/page/users")
+    public void updatePageUsers(@Payload String message) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        MessageUsersDto messageMap = objectMapper.readValue(message, MessageUsersDto.class);
+        System.out.println(messageMap);
+        System.out.println(message);
+        messagingTemplate.convertAndSend("/topic/page/title/"+messageMap.getPageId(), messageMap);
+        for (int i=0; i<messageMap.getSelectedUsers().size(); i++) {
+//            messagingTemplate.convertAndSend("/topic/page/user/"+messageMap.getSelectedUsers().get(i).getUid(), "update");
+        }
     }
 
     @MessageMapping("/page/title")
-    public void updatePageTitle(@Payload String message) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        MessagePageDto messageMap = objectMapper.readValue(message, MessagePageDto.class);
-        messagingTemplate.convertAndSend("/topic/page/"+messageMap.getSelectId(), messageMap);
+    public void updatePageTitle(String pageId){
+        String result = pageId.substring(pageId.indexOf(":") + 1, pageId.indexOf("}"));
+        result = result.replace("\"", ""); // 따옴표 제거
+        Map<String, String> message = new HashMap<>();
+        message.put("title", result);
+        messagingTemplate.convertAndSend("/topic/page/title/"+result, message);
         System.out.println("sadkfljasdkfjllsaf2");
     }
 

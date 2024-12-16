@@ -1,6 +1,9 @@
 package com.backend.dto.response.page;
 
+import com.backend.dto.response.user.GetUsersAllDto;
 import lombok.*;
+
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -8,9 +11,7 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
-public class MessagePageDto {
-    private String type;
+public class MessageUsersDto {
+    private List<GetUsersAllDto> selectedUsers;
     private String pageId;
-    private Object content;
-    private String uid;
 }

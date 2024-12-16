@@ -15,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -159,18 +161,66 @@ public class ChatService {
         return null;
     }
 
-    // 특정 채팅방의 최신 메시지 로드
-    public List<ChatMessageDocument> getLatestMessages(String chatRoomId) {
-        PageRequest pageRequest = PageRequest.of(0, PAGE_SIZE);
-        return chatMessageRepository.findByRoomIdOrderByTimeStampDesc(chatRoomId, pageRequest);
+    // 특정 채팅방의 마지막으로 읽은 메시지부터 로드
+    public List<ChatMessageDocument> getLatestMessages(String chatRoomId, String uid) {
+        // 사용자와 채팅방에 대한 매퍼 정보 조회
+        Optional<ChatMapperDocument> chatMapperOpt = chatMapperRepository.findByUserIdAndChatRoomId(uid, chatRoomId);
+        // 채팅방의 가장 최신 메시지 조회
+        Optional<ChatMessageDocument> chatMessageOpt = chatMessageRepository.findFirstByRoomIdOrderByTimeStampDesc(chatRoomId);
 
+        if (chatMapperOpt.isPresent() && chatMessageOpt.isPresent()) {
+            ChatMapperDocument chatMapperDocument = chatMapperOpt.get();
+            LocalDateTime lastReadTime = chatMapperDocument.getLastReadTimeStamp();
+
+            // 읽지 않은 메시지 조회 (최신 순으로 최대 20개)
+            Pageable unreadPage = PageRequest.of(0, 20);
+            List<ChatMessageDocument> unreadMessages = chatMessageRepository.findByRoomIdAndTimeStampAfterOrderByTimeStampDesc(chatRoomId, lastReadTime, unreadPage);
+            Collections.reverse(unreadMessages);
+
+            if (!unreadMessages.isEmpty()) {
+                unreadMessages.get(0).setStatus(2);
+            }
+
+            if (!unreadMessages.isEmpty()) {
+                // 읽지 않은 메시지가 20개 미만일 경우 추가 메시지 불러오기
+                if (unreadMessages.size() < 20) {
+                    int additionalCount = 20 - unreadMessages.size();
+                    LocalDateTime firstUnreadTimestamp = unreadMessages.get(0).getTimeStamp();
+
+                    Pageable additionalPage = PageRequest.of(0, additionalCount);
+                    List<ChatMessageDocument> additionalMessages = chatMessageRepository.findByRoomIdAndTimeStampBeforeOrderByTimeStampDesc(chatRoomId, firstUnreadTimestamp, additionalPage);
+
+                    // 추가 메시지를 역순으로 정렬하여 올바른 순서로 합치기
+                    Collections.reverse(additionalMessages);
+                    unreadMessages.addAll(0, additionalMessages);
+                }
+                return unreadMessages;
+            } else {
+                // 읽지 않은 메시지가 없을 경우 최신 20개 메시지 불러오기
+                Pageable latestPage = PageRequest.of(0, 20);
+                List<ChatMessageDocument> latestMessages = chatMessageRepository.findByRoomIdOrderByTimeStampDesc(chatRoomId, latestPage);
+
+                // 올바른 시간 순서로 정렬
+                Collections.reverse(latestMessages);
+                return latestMessages;
+            }
+        }
+        // 매퍼 정보 또는 메시지가 없을 경우 빈 리스트 반환
+        return Collections.emptyList();
     }
+
 
     // 특정 채팅방의 이전 메시지 로드
     public List<ChatMessageDocument> getOlderMessages(String chatRoomId, LocalDateTime beforeTimestamp) {
-        PageRequest pageRequest = PageRequest.of(0, PAGE_SIZE);
-        return chatMessageRepository.findByRoomIdAndTimeStampBeforeOrderByTimeStampDesc(chatRoomId, beforeTimestamp, pageRequest);
+        log.info("이전 메시지 로드 서비스 호출");
+
+        // beforeTimestamp보다 작은 메시지들 중 최신 순으로 PAGE_SIZE만큼 조회
+        PageRequest pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by("timeStamp").descending());
+        List<ChatMessageDocument> olderMessages = chatMessageRepository.findByRoomIdAndTimeStampBeforeOrderByTimeStampDesc(chatRoomId, beforeTimestamp, pageRequest);
+
+        return olderMessages;
     }
+
 
     // 사용자가 채팅방을 읽었다고 표시
     public void markAsRead(String userId, String chatRoomId) {

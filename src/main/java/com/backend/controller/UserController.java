@@ -2,6 +2,7 @@ package com.backend.controller;
 
 import com.backend.document.drive.Folder;
 import com.backend.dto.chat.UsersWithGroupNameDTO;
+import com.backend.dto.request.LoginDto;
 import com.backend.dto.request.admin.user.PatchAdminUserApprovalDto;
 import com.backend.dto.request.drive.NewDriveRequest;
 import com.backend.dto.request.user.PostUserRegisterDTO;
@@ -161,5 +162,20 @@ public class UserController {
         log.info("회원 수정 컨트롤러 "+dto);
         Long userId = Long.valueOf(auth.getName());
         return userService.updateUser(userId, dto);
+    }
+
+    @PostMapping("/my/confirmPass")
+    public ResponseEntity<?> confirmPass(Authentication auth,
+                                         @RequestBody LoginDto pwd){
+        log.info("비밀번호 확인 컨트롤러 "+pwd.getPwd());
+        Long userId = Long.valueOf(auth.getName());
+        return userService.confirmPass(userId, pwd.getPwd());
+    }
+    @PostMapping("/my/updatePass")
+    public ResponseEntity<?> updatePass (Authentication auth,
+                                         @RequestBody LoginDto dto){
+        log.info("비밀번호 변경 컨트롤러 "+dto);
+        Long userId = Long.valueOf(auth.getName());
+        return userService.updatePass(userId, dto.getPwd());
     }
 }

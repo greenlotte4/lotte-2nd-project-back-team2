@@ -11,4 +11,5 @@ public interface PageRepository extends MongoRepository<Page, String> {
 
     List<Page> findByOwnerUid(String ownerUid);
 
+    List<Page> findByOwnerUidContaining(String uid);
 }

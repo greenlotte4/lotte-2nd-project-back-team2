@@ -15,6 +15,7 @@ import com.backend.util.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -318,4 +319,8 @@ public class User {
     }
 
     public void updateMessage(String message) { this.profileMessage = message; }
+
+    public void updatePass(String pwd) {
+        this.pwd = pwd;
+    }
 }

@@ -1,6 +1,7 @@
 package com.backend.controller;
 
 import com.backend.dto.request.user.PostUserAlarmDto;
+import com.backend.repository.UserRepository;
 import com.backend.dto.response.user.RespHeaderUserDTO;
 import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
@@ -28,6 +29,23 @@ public class MainController {
         return ResponseEntity.ok("SU");
     }
 
+    @PostMapping("/api/alert")
+    public ResponseEntity<?> postAlert(
+            @RequestBody PostUserAlarmDto dto,
+            HttpServletRequest req
+    ){
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = userService.postAlert(dto,id);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/api/user/name")
     public ResponseEntity<?> getUserName(HttpServletRequest req) {
         Object idObj = req.getAttribute("id");
@@ -40,9 +58,9 @@ public class MainController {
         User user = userRepository.findById(id).get();
 
         RespHeaderUserDTO header = RespHeaderUserDTO.builder()
-                    .name(user.getName())
-                    .profileImgPath(user.getProfileImgPath())
-                    .build();
+                .name(user.getName())
+                .profileImgPath(user.getProfileImgPath())
+                .build();
         return ResponseEntity.ok(header);
     }
 
