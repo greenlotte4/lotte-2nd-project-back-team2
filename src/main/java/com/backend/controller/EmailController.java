@@ -27,62 +27,66 @@ import java.util.Map;
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 public class EmailController {
-    
+
     @Autowired
     private EmailService emailService;
-    
+
     @PostMapping("/send-qna")
     public ResponseEntity<?> sendQnaEmail(@ModelAttribute QnaRequestDto request) {
         try {
             emailService.sendQnaEmail(request);
+            emailService.sendAutoReplyEmail(request.getEmail());  // QNA 문의 후 자동 응답 이메일 추가
             return ResponseEntity.ok().body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
         } catch (Exception e) {
             log.error("이메일 전송 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "문의 전송에 실패했습니다: " + e.getMessage()));
+                    .body(Map.of("message", "문의 전송에 실패했습니다: " + e.getMessage()));
         }
     }
-    
+
     @PostMapping("/send-cancellation")
     public ResponseEntity<?> sendCancellationEmail(@RequestBody CancellationRequestDto request) {
         try {
             emailService.sendCancellationEmail(request);
+            emailService.sendAutoReplyEmail(request.getEmail());  // 취소/반품 문의 후 자동 응답 이메일 추가
             return ResponseEntity.ok().body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "문의 전송에 실패했습니다."));
+                    .body(Map.of("message", "문의 전송에 실패했습니다."));
         }
     }
-    
+
     @PostMapping("/send-product-service")
     public ResponseEntity<?> sendProductServiceEmail(@RequestBody ProductServiceRequestDto request) {
         try {
             emailService.sendProductServiceEmail(request);
+            emailService.sendAutoReplyEmail(request.getEmail());  // 제품/서비스 문의 후 자동 응답 이메일 추가
             return ResponseEntity.ok().body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "문의 전송에 실패했습니다."));
+                    .body(Map.of("message", "문의 전송에 실패했습니다."));
         }
     }
-    
+
     @PostMapping("/send-payment")
     public ResponseEntity<?> sendPaymentEmail(@RequestBody PaymentRequestDto request) {
         try {
             log.debug("Received payment email request: {}", request);
-            
+
             if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("message", "이메일 주소는 필수 항목입니다."));
+                        .body(Map.of("message", "이메일 주소는 필수 항목입니다."));
             }
-            
+
             emailService.sendPaymentEmail(request);
+            emailService.sendAutoReplyEmail(request.getEmail());  // 결제 문의 후 자동 응답 이메일 추가
             return ResponseEntity.ok()
-                .body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
-                
+                    .body(Map.of("message", "문의가 성공적으로 전송되었습니다."));
+
         } catch (Exception e) {
             log.error("이메일 전송 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "문의 전송에 실패했습니다: " + e.getMessage()));
+                    .body(Map.of("message", "문의 전송에 실패했습니다: " + e.getMessage()));
         }
     }
 }

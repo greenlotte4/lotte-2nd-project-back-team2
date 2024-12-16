@@ -18,10 +18,10 @@ spring:
         livereload:
             enabled: true
     servlet:
-          multipart:
-              location: uploads/
-              max-file-size: 10MB
-              enabled: true
+        multipart:
+            location: uploads/
+            max-file-size: 10MB
+            enabled: true
     jpa:
         database: mysql
         hibernate:
@@ -53,5 +53,5 @@ token:
     secret:
         key: "vQ9q7lwzGS2M+cjRz+Q5N2Cv3+6s49R7TmQ0gkzHpY2UM5kAzwp4Aaz+q5lX3p0ykAzE7HgFmbFMcmU5CwmfKQ=="
         issuer: "sanghun1101088@@!!##"
-
-
+admin:
+    email: your-email@example.com
