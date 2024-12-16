@@ -266,6 +266,7 @@ public class User {
                 .uid(this.uid)
                 .id(this.id)
                 .level(this.selectLevelString())
+                .profile(this.profileImgPath)
                 .build();
     }
 
@@ -278,6 +279,7 @@ public class User {
                 .uid(this.uid)
                 .id(this.id)
                 .level(this.selectLevelString())
+                .profile(this.profileImgPath)
                 .build();
     }
 

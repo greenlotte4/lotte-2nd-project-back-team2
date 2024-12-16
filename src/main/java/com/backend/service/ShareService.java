@@ -3,6 +3,7 @@ package com.backend.service;
 
 import com.backend.document.drive.FileMogo;
 import com.backend.document.drive.Folder;
+import com.backend.document.drive.Invitation;
 import com.backend.dto.request.drive.*;
 import com.backend.entity.group.GroupMapper;
 import com.backend.entity.user.User;
@@ -10,6 +11,7 @@ import com.backend.repository.GroupMapperRepository;
 import com.backend.repository.UserRepository;
 import com.backend.repository.drive.FileMogoRepository;
 import com.backend.repository.drive.FolderMogoRepository;
+import com.backend.repository.drive.InvitationRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,8 @@ public class ShareService {
     private final FileMogoRepository fileMogoRepository;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final InvitationRepository invitationRepository;
+    private final EmailService emailService;
 
     //department
     public boolean shareUser(ShareRequestDto shareRequestDto,String type,String id ) {
@@ -43,18 +47,109 @@ public class ShareService {
         if(shareRequestDto.getUserType().equals("department")){
             if(type.equals("folder")){
                 Folder folder = folderMogoRepository.findById(id).orElseThrow(() -> new RuntimeException("Folder not found"));
-                folder.setSharedUsers(shareRequestDto.getSharedUsers());
-                folder.setTarget();
+                List<SharedUser> requset = shareRequestDto.getSharedUsers();
+                List<SharedUser> savedUser = new ArrayList<>();
+
+                for(SharedUser sharedUser : requset){
+                    User user = userRepository.findById(sharedUser.getId()).orElseThrow(() -> new RuntimeException("User not found"));
+                    SharedUser sharedUser1 = SharedUser.builder()
+                            .uid(user.getUid())
+                            .id(user.getId())
+                            .profile(user.getProfileImgPath())
+                            .permission(sharedUser.getPermission())
+                            .email(user.getEmail())
+                            .group(sharedUser.getGroup())
+                            .authority(sharedUser.getAuthority())
+                            .name(user.getName())
+                            .build();
+
+                    savedUser.add(sharedUser1);
+                }
+
+
+
+
+                List<SharedUser> existingSharedUsers = folder.getSharedUsers();
+                Set<SharedUser> uniqueSharedUsers = new HashSet<>(existingSharedUsers);
+                uniqueSharedUsers.addAll(savedUser); // 새로운 사용자 추가
+                List<SharedUser> finalSharedUsers = new ArrayList<>(uniqueSharedUsers);
+
+                folder.setSharedUsers(finalSharedUsers);
                 folderMogoRepository.save(folder);
 
                 return true;
-            }else if(type.equals("type")){
+            }else if(type.equals("file")){
                 return true;
 
             }
 
 
         }else if(shareRequestDto.getUserType().equals("individual")){
+            List<SharedUser> savedUser = new ArrayList<>();
+            List<Invitation> saveInvitations = new ArrayList<>();
+
+            for(SharedUser sharedUser : shareRequestDto.getSharedUsers()){
+                Optional<User> user = userRepository.findByEmail(sharedUser.getEmail());
+
+                if(user.isPresent()){
+                    User user1 = user.get();
+                    SharedUser users  = SharedUser.builder()
+                            .uid(user1.getUid())
+                            .id(user1.getId())
+                            .profile(user1.getProfileImgPath())
+                            .name(user1.getName())
+                            .email(user1.getEmail())
+                            .authority(user1.getRole().toString())
+                            .group(user1.getGroupMappers()!=null ?user1.getGroupMappers().get(0).getGroup().getName() : "없음")
+                            .permission(sharedUser.getPermission())
+                            .build();
+                    savedUser.add(users);
+
+                }else{
+
+                    Invitation invitation = Invitation.builder()
+                            .status("PENDING")
+                            .type(type)
+                            .id(id)
+                            .email(sharedUser.getEmail())
+                            .permission(sharedUser.getPermission())
+                            .build();
+                    Invitation saved = invitationRepository.save(invitation);
+
+                    saveInvitations.add(saved);
+
+
+
+
+                }
+
+            }
+            if(type.equals("folder")){
+
+                Folder folder = folderMogoRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid Folder ID or Type"));
+
+                List<SharedUser> existingSharedUsers = folder.getSharedUsers();
+                Set<SharedUser> uniqueSharedUsers = new HashSet<>(existingSharedUsers);
+                uniqueSharedUsers.addAll(savedUser); // 새로운 사용자 추가
+                List<SharedUser> finalSharedUsers = new ArrayList<>(uniqueSharedUsers);
+
+
+
+                Query query = new Query(Criteria.where("_id").is(id));
+                Update update = new Update()
+                        .set("sharedUsers", finalSharedUsers) // 병합된 사용자 리스트 설정
+                        .set("invitations", saveInvitations);
+                mongoTemplate.upsert(query, update, Folder.class);
+
+                propagatePermissions(folder.getPath(),finalSharedUsers,folder.getSharedDepts(),saveInvitations,1);
+
+                emailService.sendToInvitation(saveInvitations,folder);
+
+
+            }
+
+
             return true;
 
         }
@@ -88,7 +183,7 @@ public class ShareService {
                         User user = gm.getUser();
                         SharedUser sharedUser = SharedUser.builder()
                                 .id(user.getId())
-                                .authority(user.getRole() != null ? user.getRole().toString() : "default") // 기본 권한 값 설정                            .email(user.getEmail())
+                                .authority(user.getRole() != null ? user.getRole().toString() : "default") // 기본 권한 값 설정                            .
                                 .uid(user.getUid())
                                 .permission(permission)
                                 .name(user.getName())
@@ -102,6 +197,8 @@ public class ShareService {
 
             }
         }
+        log.info("공유유저 리스트!!!"+sharedDeptList);
+
 
         if(type.equals("folder")){
             Folder folder = folderMogoRepository.findById(id)
@@ -120,7 +217,7 @@ public class ShareService {
                     .set("target", "target");
             mongoTemplate.upsert(query, update, Folder.class);
 
-            propagatePermissions(folder.getPath(),finalSharedUsers,sharedDeptList,1);
+            propagatePermissions(folder.getPath(),finalSharedUsers,sharedDeptList,folder.getInvitations(),1);
 
             return true;
         }else if(type.equals("file")){
@@ -172,7 +269,7 @@ public class ShareService {
             }
 
             folderMogoRepository.save(folder);
-            propagatePermissions(folder.getPath(),sharedUsers,sharedDepts,1);
+            propagatePermissions(folder.getPath(),sharedUsers,sharedDepts,folder.getInvitations(),1);
 
             log.info("Departments and related users removed successfully.");
 
@@ -181,13 +278,14 @@ public class ShareService {
     }
 
 
-    public void propagatePermissions(String path, List<SharedUser> sharedUserJson,List<ShareDept> shardedDeptJson,int isShared) {
+    public void propagatePermissions(String path, List<SharedUser> sharedUserJson,List<ShareDept> shardedDeptJson,List<Invitation> Invitations,int isShared) {
         // 2. 하위 폴더 업데이트
         Query folderQuery = new Query(Criteria.where("path").regex("^" + path + "(/|$)")); // 하위 폴더를 찾기 위한 쿼리
         Update folderUpdate = new Update()
                 .set("updatedAt", LocalDateTime.now())
                 .set("sharedUsers", sharedUserJson)
                 .set("sharedDepts", shardedDeptJson)
+                .set("Invitations",Invitations)
                 .set("isShared", isShared);
         mongoTemplate.updateMulti(folderQuery, folderUpdate, Folder.class);
 
@@ -197,6 +295,7 @@ public class ShareService {
                 .set("updatedAt", LocalDateTime.now())
                 .set("sharedUser", sharedUserJson)
                 .set("sharedDept", shardedDeptJson)
+                .set("Invitations",Invitations)
                 .set("isShared", isShared);
         mongoTemplate.updateMulti(fileQuery, fileUpdate, FileMogo.class);
     }

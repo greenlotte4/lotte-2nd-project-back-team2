@@ -1,5 +1,7 @@
 package com.backend.service;
 
+import com.backend.document.drive.Folder;
+import com.backend.document.drive.Invitation;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,7 @@ import jakarta.mail.internet.MimeMessage;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -273,6 +276,64 @@ public class EmailService {
             sendEmail(new String[]{adminEmail}, subject, content, null);
         } catch (MessagingException ex) {
             logger.error("관리자 이메일 전송 실패. 에러 메시지: {}", ex.getMessage());
+        }
+    }
+
+
+    public void sendToInvitation(List<Invitation> invitations, Folder folder){
+        try {
+            for(Invitation invitation: invitations){
+                String subject = "PLANTRY에서 새로운 폴더로 초대합니다!";
+                String link = "https://your-app.com/invite/" + invitation.getId();
+                // HTML 이메일 내용
+                String content = """
+                    <!DOCTYPE html>
+                    <html lang="ko">
+                    <head>
+                        <meta charset="UTF-8">
+                        <style>
+                            body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; line-height: 1.6; color: #333; }
+                            .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9fc; border-radius: 12px; }
+                            .header { background: linear-gradient(135deg, #6a11cb 0%%, #2575fc 100%%); color: white; padding: 20px; text-align: center; border-radius: 12px 12px 0 0; }
+                            .content { background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                            .btn { display: inline-block; background-color: #2575fc; color: #fffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 20px 0; }
+                            .footer { text-align: center; color: #888; font-size: 12px; margin-top: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="header">
+                                <h1>PLANTRY 초대</h1>
+                            </div>
+                            <div class="content">
+                                <p>안녕하세요,</p>
+                                <p><strong>%s</strong> 폴더로 초대합니다!</p>
+                                <p>새로운 협업과 공유의 기회가 열렸어요.</p>
+                                <a href="%s" class="btn">초대 수락하기</a>
+                                <p>링크가 작동하지 않으면 아래 URL을 브라우저에 복사하여 붙여넣으세요:</p>
+                                <p style="word-break: break-all;">%s</p>
+                            </div>
+                            <div class="footer">
+                                <p>&copy; 2024 PLANTRY. All rights reserved.</p>
+                                <p>이 이메일은 자동으로 생성되었습니다.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    """.formatted(folder.getName(), link, link);
+
+                sendEmail(
+                        new String[]{fromEmail, invitation.getEmail()},
+                        subject,
+                        content,
+                        null
+                );
+            }
+        } catch (Exception e) {
+            logger.error("이메일 전송 실패. 에러 메시지: {}", e.getMessage());
+            logger.error("상세 에러: ", e);
+            sendErrorNotification(e);
+            throw new RuntimeException("이메일 전송에 실패했습니다.", e);
         }
     }
 }

@@ -3,10 +3,7 @@ package com.backend.controller;
 
 import com.backend.document.drive.FileMogo;
 import com.backend.dto.request.FileRequestDto;
-import com.backend.dto.request.drive.DeletedRequest;
-import com.backend.dto.request.drive.MoveFolderRequest;
-import com.backend.dto.request.drive.NewDriveRequest;
-import com.backend.dto.request.drive.RenameRequest;
+import com.backend.dto.request.drive.*;
 import com.backend.dto.response.UserDto;
 import com.backend.dto.response.drive.FolderDto;
 import com.backend.document.drive.Folder;
@@ -92,6 +89,9 @@ public class DriveController {
         FolderDto folderDto = folderService.getParentFolder(newDriveRequest.getParentId());
         newDriveRequest.setParentFolder(folderDto);
         newDriveRequest.setType("FOLDER");
+        newDriveRequest.setShareDepts(folderDto.getShareDepts());
+        newDriveRequest.setSharedUsers(folderDto.getSharedUsers());
+
         String folderId = folderService.createFolder(newDriveRequest);
 
         //권한설정 저장
@@ -150,22 +150,27 @@ public class DriveController {
         Map<String,Object> response = new HashMap<>();
 
         FolderDto parentFolder = folderService.getParentFolder(folderId);
-
         List<UserDto> sharedUsersWithDetails = new ArrayList<>();
 
-
-
         //폴더 가져오기
-
-
-
         String uid = (String) request.getAttribute("uid");
-        List<FolderDto> subFolders = folderService.getSubFolders(uid,folderId);
+        Long id = (Long) request.getAttribute("id");
+        List<FolderDto> subFolders = new ArrayList<>();
+        List<FileRequestDto> files = new ArrayList<>();
+        if(parentFolder.getOwnerId().equals(uid)){
+            subFolders = folderService.getSubFolders(uid,folderId);
+            files = folderService.getFiles(folderId);
+        }else{
+            List<SharedUser> users = parentFolder.getSharedUsers();
+            boolean isSharedUser = users.stream().anyMatch(user -> user.getId().equals(id));
 
-        //파일 가져오기
-        List<FileRequestDto> files = folderService.getFiles(folderId);
+            if(isSharedUser){
+                subFolders = folderService.getSharedSubFolders(id,folderId);
+            }
 
-        response.put("sharedUser",sharedUsersWithDetails);
+        }
+
+
         response.put("files",files);
         response.put("parentFolder",parentFolder);
         response.put("subFolders", subFolders);

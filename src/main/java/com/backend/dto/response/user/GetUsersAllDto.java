@@ -16,4 +16,5 @@ public class GetUsersAllDto {
     private String authority;
     private String group;
     private String level;
+    private String profile;
 }

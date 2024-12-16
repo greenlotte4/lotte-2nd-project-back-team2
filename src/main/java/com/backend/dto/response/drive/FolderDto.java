@@ -1,5 +1,6 @@
 package com.backend.dto.response.drive;
 
+import com.backend.document.drive.Invitation;
 import com.backend.dto.request.drive.ShareDept;
 import com.backend.dto.request.drive.SharedUser;
 import com.backend.entity.folder.File;
@@ -46,4 +47,5 @@ public class FolderDto {
 
     private List<ShareDept> shareDepts = new ArrayList<>();
     private List<SharedUser> sharedUsers = new ArrayList<>();
+    private List<Invitation> invitations = new ArrayList<>();
 }

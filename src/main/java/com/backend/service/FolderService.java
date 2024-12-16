@@ -178,9 +178,12 @@ public class FolderService {
     }
 
     public List<FolderDto> getSubFolders(String ownerId, String folderId){
-        List<Folder> folders =folderMogoRepository.findByOwnerIdAndParentIdAndStatusIsNotOrderByOrder(ownerId,folderId,0);
+        List<Folder> folders =folderMogoRepository.findByParentIdAndStatusIsNotOrderByOrder(folderId,0);
+        return folders.stream().map(Folder::toDTO).collect(Collectors.toList());
+    }
 
-
+    public List<FolderDto> getSharedSubFolders(Long id, String folderId){
+        List<Folder> folders =folderMogoRepository.findByParentIdAndStatusIsNotOrderByOrder(folderId,0);
         return folders.stream().map(Folder::toDTO).collect(Collectors.toList());
     }
 

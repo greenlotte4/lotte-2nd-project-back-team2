@@ -50,6 +50,8 @@ public class Folder {
     @Builder.Default
     private String sharedDept = "[]";
 
+
+
     @Setter
     @Builder.Default
     private List<SharedUser> sharedUsers = new ArrayList<>(); // 공유 사용자
@@ -57,6 +59,11 @@ public class Folder {
     @Setter
     @Builder.Default
     private List<ShareDept> sharedDepts = new ArrayList<>(); // 공유 부서
+
+    @Setter
+    @Builder.Default
+    private List<Invitation> invitations = new ArrayList<>();
+
     @Builder.Default
     private String target="";
 
