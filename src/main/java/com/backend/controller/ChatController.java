@@ -126,17 +126,20 @@ public class ChatController {
     @GetMapping("/getMessage")
     public ChatResponseDocument getMessages(
             @RequestParam String chatRoomId,
+            @RequestParam String uid,
             @RequestParam(required = false) String before // ISO 8601 형식의 timestamp
     ) {
         List<ChatMessageDocument> messages;
         boolean hasMore;
         if (before != null) {
+            log.info("이전 메시지 호출");
             LocalDateTime beforeTimestamp = LocalDateTime.parse(before);
             messages = chatService.getOlderMessages(chatRoomId, beforeTimestamp);
             hasMore = messages.size() == ChatService.PAGE_SIZE;
         } else {
-            messages = chatService.getLatestMessages(chatRoomId);
-            hasMore = messages.size() == ChatService.PAGE_SIZE;
+            log.info("처음 메시지 호출");
+            messages = chatService.getLatestMessages(chatRoomId, uid);
+            hasMore = true;
         }
         return ChatResponseDocument.builder()
                 .messages(messages)
