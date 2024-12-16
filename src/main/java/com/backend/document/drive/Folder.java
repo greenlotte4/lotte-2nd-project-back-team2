@@ -1,5 +1,7 @@
 package com.backend.document.drive;
 
+import com.backend.dto.request.drive.ShareDept;
+import com.backend.dto.request.drive.SharedUser;
 import com.backend.dto.response.drive.FolderDto;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +50,16 @@ public class Folder {
     @Builder.Default
     private String sharedDept = "[]";
 
+    @Setter
+    @Builder.Default
+    private List<SharedUser> sharedUsers = new ArrayList<>(); // 공유 사용자
+
+    @Setter
+    @Builder.Default
+    private List<ShareDept> sharedDepts = new ArrayList<>(); // 공유 부서
+    @Builder.Default
+    private String target="";
+
     @Builder.Default
     private int isPinned = 0; // 1: 고정 폴더
 
@@ -70,6 +82,9 @@ public class Folder {
                 .linkSharing(this.linkSharing)
                 .status(this.status)
                 .isPinned(this.isPinned)
+                .shareDepts(this.sharedDepts)
+                .sharedUsers(this.sharedUsers)
+                .target(this.target)
                 .build();
     }
 
@@ -80,4 +95,11 @@ public class Folder {
     public void moveOrder(double newOrder){this.order = newOrder;}
 
     public void updateSharedUser(String newSharedUser){this.sharedUser = newSharedUser;}
+
+    public void updateSharedDept(String newSharedDept){this.sharedDept = newSharedDept;}
+    public void updateSharedUsers(List<SharedUser> newSharedUsers){this.sharedUsers = newSharedUsers;}
+    public void setTarget(){this.target="target";}
+
 }
+
+

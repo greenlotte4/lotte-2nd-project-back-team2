@@ -13,16 +13,10 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShareRequestDto {
-    private String type; // "personal", "SelectedDepartment", or "department"
-    private List<ShareEntity> users; // List of users with their details
-    // For department sharing
-    private List<ShareEntity> departments;
+    private String userType;
+    private List<SharedUser> sharedUsers;
+    private List<DepartmentDto> departments;
 
-    @Data
-    public static class ShareEntity {
-        private Long id;
-        private String permission;
-    }
 
 
 }

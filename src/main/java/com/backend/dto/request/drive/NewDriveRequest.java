@@ -5,6 +5,7 @@ import com.backend.dto.response.drive.FolderDto;
 import com.backend.util.PermissionType;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -27,6 +28,9 @@ public class NewDriveRequest {
     private String parentId;
     private int status;
     private int permissions;
+
+    private List<ShareDept> shareDepts = new ArrayList<>();
+    private List<SharedUser> sharedUsers = new ArrayList<>();
 
     private FolderDto parentFolder;
 }

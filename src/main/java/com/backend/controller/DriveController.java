@@ -120,10 +120,11 @@ public class DriveController {
         List<FolderDto> folderDtoList =  folderService.getFoldersByUid(uid, rootFolder.getId());
 
 
-
+        List<FolderDto> shareFolderList= folderService.sharedFolder(uid);
 
         FolderResponseDto folderResponseDto  = FolderResponseDto.builder()
                 .folderDtoList(folderDtoList)
+                .shareFolderDtoList(shareFolderList)
                 .uid(uid)
                 .build();
 
@@ -149,32 +150,15 @@ public class DriveController {
         Map<String,Object> response = new HashMap<>();
 
         FolderDto parentFolder = folderService.getParentFolder(folderId);
-        ObjectMapper objectMapper = new ObjectMapper(); // JSON 파싱용 ObjectMapper
-        Map<String, Map<String, String>> sharedUserMap = new HashMap<>();
-        try {
-            if (parentFolder.getSharedUser() != null) {
-                sharedUserMap = objectMapper.readValue(parentFolder.getSharedUser(),
-                        new TypeReference<Map<String, Map<String, String>>>() {});
-            }
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse sharedUser JSON", e);
-        }
+
         List<UserDto> sharedUsersWithDetails = new ArrayList<>();
-        for (String key : sharedUserMap.keySet()) {
-            String userId = sharedUserMap.get(key).get("id");
-            String permission = sharedUserMap.get(key).get("permission");
 
-            // User 정보를 조회 (DB 또는 서비스 호출)
-            UserDto user = userService.getSliceUser(Long.parseLong(userId)); // userService를 통해 조회
-
-            if (user != null) {
-                user.setPermission(permission);
-                sharedUsersWithDetails.add(user);
-            }
-        }
 
 
         //폴더 가져오기
+
+
+
         String uid = (String) request.getAttribute("uid");
         List<FolderDto> subFolders = folderService.getSubFolders(uid,folderId);
 

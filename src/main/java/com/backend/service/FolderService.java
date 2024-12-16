@@ -84,6 +84,8 @@ public class FolderService {
                    .isShared(request.getIsShared())
                    .linkSharing(request.getLinkSharing())
                    .updatedAt(LocalDateTime.now())
+                   .sharedDepts(request.getShareDepts())
+                   .sharedUsers(request.getSharedUsers())
                    .build();
 
 
@@ -158,6 +160,13 @@ public class FolderService {
             return folderDtos;
 
 
+    }
+
+
+    public List<FolderDto> sharedFolder(String uid){
+        List<Folder> folders = folderMogoRepository.findBySharedUsersUidAndTarget(uid,"target");
+
+        return folders.stream().map(Folder::toDTO).collect(Collectors.toList());
     }
 
 
