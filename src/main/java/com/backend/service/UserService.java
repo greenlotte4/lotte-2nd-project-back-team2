@@ -18,6 +18,7 @@ import com.backend.util.Role;
 import jakarta.mail.Message;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -523,6 +524,32 @@ public class UserService {
             return ResponseEntity.ok().build();
         }else{
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유저 정보를 찾을 수 없습니다.");
+        }
+    }
+
+    public ResponseEntity<?> confirmPass(Long userId, String pwd) {
+        Optional<User> optUser = userRepository.findById(userId);
+        if(optUser.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+        if(passwordEncoder.matches(pwd, optUser.get().getPwd())){
+            return ResponseEntity.ok().build();
+        }else{
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("비밀번호 안 맞음");
+        }
+    }
+
+    public ResponseEntity<?> updatePass(Long userId, String pwd) {
+        Optional<User> optUser = userRepository.findById(userId);
+        if(optUser.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }else{
+            User user = optUser.get();
+            String encodedPwd = passwordEncoder.encode(pwd);
+            log.info("인코딩 패스워드 "+encodedPwd);
+            user.updatePass(encodedPwd);
+            userRepository.save(user);
+            return ResponseEntity.ok().build();
         }
     }
 }
