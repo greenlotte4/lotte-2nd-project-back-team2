@@ -1,14 +1,14 @@
 package com.backend.controller;
 
 import com.backend.dto.request.LoginDto;
+import com.backend.dto.request.user.ReqSocialLinkDTO;
 import com.backend.dto.response.UserDto;
 import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
 import com.backend.service.UserService;
+import com.backend.util.MyUserDetails;
 import com.backend.util.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -17,11 +17,11 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -156,5 +156,26 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/social")
+    public ResponseEntity<?> socialLogin () {
+//        Map<String, Object> attributes = oauth2User.getAttributes();
+//        log.info("소셜 정보 처리 후 이쪽으로 들어오는지 확인 "+attributes);
+        return ResponseEntity.ok().body("소셜 로그인");
+    }
 
+    @PostMapping("/link")
+    public ResponseEntity<?> linkSocialAccount(
+            @AuthenticationPrincipal MyUserDetails userDetails,
+            @RequestBody ReqSocialLinkDTO request
+    ) {
+
+        log.info("링크소셜 컨트롤러 ");
+        // 1. 현재 인증된 사용자 ID 확인
+//        Long userId = Long.parseLong(userDetails.getName());
+
+        // 2. 소셜 계정 연동 로직
+//        socialAccountService.linkSocialAccount(userId, request);
+
+        return ResponseEntity.ok().build();
+    }
 }

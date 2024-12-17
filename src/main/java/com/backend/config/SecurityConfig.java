@@ -64,10 +64,14 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
-//                .oauth2Login(login -> {
-//                    login.userInfoEndpoint(endpoint -> endpoint.userService(myOauth2UserService))
-//                            .defaultSuccessUrl("/api/auth/social");
-//                })
+                .oauth2Login(login -> {
+                    login.userInfoEndpoint(endpoint -> endpoint.userService(myOauth2UserService));
+//                            .successHandler(oAuth2SuccessHandler());
+//                            .defaultSuccessUrl((request, response, authentication) -> {"/api/auth/link"});
+//                            .successHandler((request, response, authentication) -> {
+//
+//                            })
+                })
                 .build();
     }
 
