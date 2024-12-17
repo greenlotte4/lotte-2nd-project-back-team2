@@ -10,6 +10,7 @@ import com.backend.repository.community.CommentRepository;
 import com.backend.repository.community.PostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+
+
+
 
     public CommentResponseDTO convertToResponseDto(Comment comment) {
         CommentResponseDTO dto = new CommentResponseDTO();
@@ -113,17 +117,16 @@ public class CommentService {
     }
 
     @Transactional
-    public void likeComment(Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
+    public CommentResponseDTO likeComment(Long postId, Long commentId, Long userId) {
+        Comment comment = commentRepository.findByPost_PostIdAndCommentId(postId, commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
-        if (comment.getLikes() == 0) {
-            comment.setLikes(1L);
-        } else {
-            comment.setLikes(0L);
-        }
+        boolean isLiked = comment.toggleLike(userId);
 
         commentRepository.save(comment);
+
+        return new CommentResponseDTO(comment, isLiked);
     }
+
 }
 

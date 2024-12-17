@@ -30,4 +30,6 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
     Folder findFolderByNameAndParentIdAndStatusIsNot(String name, String parentId,int status);
 
     List<Folder> findBySharedUsersUidAndTarget(String userId,String target);
+
+    Optional<Folder> findByIdAndSharedUsersUid(String folderId,String uid);
 }

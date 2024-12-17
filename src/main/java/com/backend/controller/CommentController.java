@@ -21,44 +21,62 @@ import java.util.List;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/community/posts/{postId}")
+@RequestMapping("/api/community/posts")
 public class CommentController {
 
     private final CommentService commentService;
     private final CommentRepository commentRepository;
 
 
-    @GetMapping("/comments")
+    @GetMapping("/{postId}/comments")
     public ResponseEntity<List<CommentResponseDTO>> getComments(@PathVariable Long postId) {
         List<CommentResponseDTO> comments = commentService.getCommentsByPostId(postId);
         return ResponseEntity.ok(comments);
     }
 
-    @PostMapping("/comments")
+    @PostMapping("/{postId}/comments")
     public ResponseEntity<String> createComment(@RequestBody CommentRequestDTO requestDto) {
+
         commentService.createComment(requestDto);
         return ResponseEntity.ok("댓글이 성공적으로 등록되었습니다.");
     }
 
 
-    @PutMapping("/{commentId}")
+    @PutMapping("/{postId}/{commentId}")
     public ResponseEntity<String> updateComment(@PathVariable Long commentId, @RequestBody CommentRequestDTO requestDto) {
         commentService.updateComment(commentId, requestDto);
         return ResponseEntity.ok("댓글이 성공적으로 수정되었습니다.");
     }
 
-    @DeleteMapping("/{commentId}")
+    @DeleteMapping("/{postId}/{commentId}")
     public ResponseEntity<String> deleteComment(@PathVariable Long commentId) {
         commentService.deleteComment(commentId);
         return ResponseEntity.ok("댓글이 성공적으로 삭제되었습니다.");
     }
 
-    @PostMapping("/comments/{commentId}/like")
-    public ResponseEntity<String> likeComment(@PathVariable Long postIdId, @PathVariable Long commentId) {
-        commentService.likeComment(commentId);
-        return ResponseEntity.ok("좋아요 상태가 변경되었습니다.");
+    @PostMapping("/{postId}/comments/{commentId}/like")
+    public ResponseEntity<CommentResponseDTO> likeComment(
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            @RequestParam Long userId) {
+
+        log.info("=== 좋아요 API 호출 시작 ===");
+        log.info("RequestMapping: /api/community/posts");
+        log.info("PostMapping: /{postId}/comments/{commentId}/like");
+        log.info("전체 URL: /api/community/posts/{}/comments/{}/like", postId, commentId);
+        log.info("받은 파라미터 - postId: {}, commentId: {}", postId, commentId);
+
+        try {
+            CommentResponseDTO responseDto = commentService.likeComment(postId, commentId, userId);
+            log.info("좋아요 처리 완료 - 댓글 ID: {}, 좋아요 수: {}",
+                    responseDto.getCommentId(), responseDto.getLikesCount());
+            return ResponseEntity.ok(responseDto);
+        } catch (Exception e) {
+            log.error("좋아요 처리 중 오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(null);
+        }
     }
-
-
-
 }
+
+
+

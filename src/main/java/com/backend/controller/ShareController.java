@@ -71,4 +71,13 @@ public class ShareController {
         }
         return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(Collections.emptyList());
     }
+
+    @GetMapping("/invite/validate/{invitationId}")
+    public ResponseEntity<?> validateInvitation(@PathVariable String invitationId , HttpServletRequest servletRequest) {
+
+        String uid = (String) servletRequest.getAttribute("uid");
+        Map<String, Object> response = shareService.invitationInvaild(invitationId,uid);
+        log.info(" 공유결과!!!!"+response);
+        return ResponseEntity.ok().body(response);
+    }
 }

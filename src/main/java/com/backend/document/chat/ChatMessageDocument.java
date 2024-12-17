@@ -20,7 +20,8 @@ public class ChatMessageDocument {
     @Id
     private String id;
     private String roomId; // 채팅방 아이디
-    private int status;  // 상태
+    @Builder.Default
+    private int status = 0;  // 상태
     private String type; // 공지 , 일반채팅 , 파일, 입장메시지, 퇴장메시지
     private String content; // 내용
     private String fileUrl; // 파일 Url

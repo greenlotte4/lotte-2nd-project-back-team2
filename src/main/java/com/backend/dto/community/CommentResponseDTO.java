@@ -39,12 +39,20 @@ public class CommentResponseDTO {
 
     private Boolean isDeleted;
 
+    private boolean isLiked;
+
+
     // Comment 객체를 기반으로 하는 생성자
-    public CommentResponseDTO(Comment comment) {
+    public CommentResponseDTO(Comment comment, boolean isLiked) {
         this.commentId = comment.getCommentId();
+        this.postId = comment.getPost().getPostId();
         this.content = comment.getContent();
         this.writer = comment.getUser().getName();
-        this.postId = comment.getPost().getPostId();
+        this.createdAt = comment.getCreatedAt();
+        this.likesCount = comment.getLikes();
+        this.isDeleted = comment.getIsDeleted();
+        this.depth = comment.getDepth();
+        this.isLiked = isLiked;
 
     }
 

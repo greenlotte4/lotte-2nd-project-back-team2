@@ -37,7 +37,6 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-
     @Column(nullable = false, length = 1000)
     private String content;
 
@@ -47,6 +46,8 @@ public class Comment extends BaseTimeEntity {
     @Column(nullable = false)
     private Boolean isDeleted = false;
 
+    @ElementCollection(fetch = FetchType.EAGER) // 즉시 로딩으로 변경하여 프록시 문제 방지
+    private Set<Long> likedUserIds = new HashSet<>(); // 좋아요 누른 회원 ID 목록
 
     @Column(nullable = false)
     private int depth = 0; // 댓글 깊이 (0: 일반 댓글, 1 이상: 대댓글)
@@ -70,17 +71,30 @@ public class Comment extends BaseTimeEntity {
         if (parent == null) {
             // 부모 댓글이 없는 경우 (일반 댓글)
             this.depth = 0;
-            this.orderNumber = (long) post.getCommentCount()+ 1;
+            this.orderNumber = post.getCommentCount() + 1L;
         } else {
             // 부모 댓글이 있는 경우 (대댓글)
-            this.depth = parent.getDepth() + 1; // 부모 댓글의 깊이 + 1
-            this.orderNumber = parent.getOrderNumber(); // 부모 댓글의 순서를 그대로 물려받음
+            this.depth = parent.getDepth() + 1;
+            this.orderNumber = parent.getOrderNumber();
         }
     }
 
     // 댓글 삭제 (소프트 삭제)
     public void deleteComment() {
         this.isDeleted = true;
+    }
+
+    // 사용자별 좋아요 토글 메서드
+    public boolean toggleLike(Long userId) {
+        if (likedUserIds.contains(userId)) {
+            likedUserIds.remove(userId);
+            decreaseLikes();
+            return false; // 좋아요 취소
+        } else {
+            likedUserIds.add(userId);
+            increaseLikes();
+            return true; // 좋아요 추가
+        }
     }
 
     // 좋아요 증가

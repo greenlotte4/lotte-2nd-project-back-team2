@@ -72,6 +72,7 @@ public class ChatService {
                 .type("CREATE")
                 .build();
 
+        chatMessageRepository.save(message);
         // 메시지를 브로드캐스트
         messagingTemplate.convertAndSend("/topic/chat/" + savedDocument.getId(), message);
 
@@ -82,6 +83,40 @@ public class ChatService {
         if (chatRoomRepository.findById(chatRoomId).isPresent()) {
             ChatRoomDocument chatRoomDocument = chatRoomRepository.findById(chatRoomId).get();
             return chatRoomDocument.toDTO();
+        }
+        return null;
+    }
+
+    public ChatRoomDocument updateRoomName(String chatRoomId, String newName) {
+        Optional<ChatRoomDocument> chatRoomOpt = chatRoomRepository.findById(chatRoomId);
+        if (chatRoomOpt.isPresent()) {
+            ChatRoomDocument chatRoomDocument = chatRoomOpt.get();
+            chatRoomDocument.setChatRoomName(newName);
+            ChatRoomDocument savedDocument = chatRoomRepository.save(chatRoomDocument);
+            return savedDocument;
+        }
+        return null;
+    }
+
+    public List<ChatMemberDocument> getChatMembers(String chatRoomId) {
+        ChatRoomDTO chatRoomDTO = getChatRoomInfo(chatRoomId);
+        List<String> members = chatRoomDTO.getMembers();
+        members.add(chatRoomDTO.getLeader());
+        List<ChatMemberDocument> membersList = new ArrayList<>();
+        for (String uid : members) {
+            ChatMemberDocument memberDocument = chatMemberRepository.findByUid(uid);
+            membersList.add(memberDocument);
+        }
+        return membersList;
+    }
+
+    public ChatRoomDocument updateChatMembers(String chatRoomId, List<String> members) {
+        Optional<ChatRoomDocument> chatRoomOpt = chatRoomRepository.findById(chatRoomId);
+        if (chatRoomOpt.isPresent()) {
+            ChatRoomDocument chatRoomDocument = chatRoomOpt.get();
+            chatRoomDocument.getMembers().addAll(members);
+            ChatRoomDocument savedDocument = chatRoomRepository.save(chatRoomDocument);
+            return savedDocument;
         }
         return null;
     }
@@ -138,18 +173,81 @@ public class ChatService {
     }
 
     @Transactional
-    public void deleteChatMember(String uid, String roomId) {
-        Optional<ChatRoomDocument> optionalChatRoomDocument = chatRoomRepository.findById(roomId);
-        if (optionalChatRoomDocument.isPresent()) {
-            ChatRoomDocument chatRoomDocument = optionalChatRoomDocument.get();
-            if (chatRoomDocument.getMembers().contains(uid)) {
-                chatRoomDocument.getMembers().remove(uid);
-            } else if (chatRoomDocument.getLeader().equals(uid)) {
-                chatRoomDocument.setLeader(null);
+    public String deleteChatMember(String uid, String roomId) {
+        log.info("uid: {}", uid);
+        log.info("roomId: {}", roomId);
+        try {
+            // 채팅방 정보 조회
+            Optional<ChatRoomDocument> optionalChatRoomDocument = chatRoomRepository.findById(roomId);
+            if (!optionalChatRoomDocument.isPresent()) {
+                log.error("채팅방을 찾을 수 없습니다: roomId={}", roomId);
+                throw new Exception("채팅방을 찾을 수 없습니다.");
             }
-            chatRoomRepository.save(chatRoomDocument);
+
+            ChatRoomDocument chatRoomDocument = optionalChatRoomDocument.get();
+            List<String> members = chatRoomDocument.getMembers();
+            String leader = chatRoomDocument.getLeader();
+            log.info("방 정보: {}", chatRoomDocument);
+
+            // 사용자가 채팅방의 멤버인지 리더인지 확인
+            boolean isMember = members.contains(uid);
+            boolean isLeader = leader.equals(uid);
+
+            if (isMember) {
+                if (members.size() > 1) {
+                    // 멤버가 나가는 경우
+                    log.info("멤버가 나갔을 때: uid={}", uid);
+                    members.remove(uid);
+                    chatRoomRepository.save(chatRoomDocument);
+                } else if (members.size() == 1) {
+                    // 마지막 멤버가 나가는 경우, 방 삭제
+                    log.info("마지막 멤버가 나가는 경우: uid={}", uid);
+                    members.remove(uid);
+                    chatRoomRepository.delete(chatRoomDocument);
+                }
+            } else if (isLeader) {
+                if (members.size() >= 1) {
+                    // 리더가 나가면서 다른 멤버가 있는 경우, 새 리더 지정
+                    log.info("리더가 나갔을 때: uid={}", uid);
+                    String nextLeader = members.get(0);
+                    chatRoomDocument.setLeader(nextLeader);
+                    members.remove(0);
+                    chatRoomRepository.save(chatRoomDocument);
+                    log.info("새 리더: {}", nextLeader);
+                } else {
+                    // 리더가 나가면서 다른 멤버가 없는 경우, 방 삭제
+                    log.info("리더가 나가면서 다른 멤버가 없는 경우: uid={}", uid);
+                    chatRoomRepository.delete(chatRoomDocument);
+                }
+            } else {
+                log.error("사용자가 채팅방의 멤버나 리더가 아닙니다: uid={}", uid);
+                throw new RuntimeException("사용자가 채팅방의 멤버나 리더가 아닙니다.");
+            }
+
+            // 채팅맵퍼 삭제
+            chatMapperRepository.deleteByUserIdAndChatRoomId(uid, roomId);
+
+            // 사용자 정보 조회
+            ChatMemberDocument optionalChatMember = chatMemberRepository.findByUid(uid);
+            String userName = optionalChatMember.getName();
+
+            // 시스템 알림 메시지 생성
+            ChatMessageDocument message = ChatMessageDocument.builder()
+                    .roomId(roomId)
+                    .sender("System")
+                    .content(userName + "님이 채팅방을 나갔습니다.")
+                    .type("LEAVE")
+                    .build();
+            chatMessageRepository.save(message);
+
+            // 실시간 알림 전송
+            messagingTemplate.convertAndSend("/topic/chat/" + roomId, message);
+
+            return "success";
+        } catch (Exception e) {
+            log.error("채팅방 나가기 실패: uid={}, roomId={}, error={}", uid, roomId, e.getMessage());
+            throw new RuntimeException("채팅방 나가기 실패", e);
         }
-        chatMapperRepository.deleteByUserIdAndChatRoomId(uid, roomId);
     }
 
     public ChatMessageDocument saveMessage(ChatMessageDTO chatMessageDTO) {

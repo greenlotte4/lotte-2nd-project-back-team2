@@ -152,6 +152,8 @@ public class FolderService {
                         .status(folder.getStatus())
                         .linkSharing(folder.getLinkSharing())
                         .updatedAt(folder.getUpdatedAt())
+                        .sharedUsers(folder.getSharedUsers())
+                        .shareDepts(folder.getSharedDepts())
                         .parentId(parentId)
                         .build();
                 log.info(folderDto.toString());

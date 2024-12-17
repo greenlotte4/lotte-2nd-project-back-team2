@@ -4,6 +4,7 @@ import com.backend.document.chat.ChatMemberDocument;
 import com.backend.document.chat.ChatMessageDocument;
 import com.backend.document.chat.ChatResponseDocument;
 import com.backend.document.chat.ChatRoomDocument;
+import com.backend.dto.chat.ChatMemberDTO;
 import com.backend.dto.chat.ChatMessageDTO;
 import com.backend.dto.chat.ChatRoomDTO;
 import com.backend.entity.user.User;
@@ -56,6 +57,15 @@ public class ChatController {
         }
     }
 
+    @GetMapping("/roomMembers/{roomId}") // 채팅방 id로 해당 채팅방의 모든 멤버 목록 조회
+    public ResponseEntity<List<ChatMemberDocument>> getChatRoomMembers(@PathVariable String roomId) {
+        List<ChatMemberDocument> members = chatService.getChatMembers(roomId);
+        if (members.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(members);
+    }
+
     @Transactional
     @PostMapping("/room")
     public ResponseEntity<?> createRoom(
@@ -76,9 +86,16 @@ public class ChatController {
     }
 
     @DeleteMapping("/quitRoom")
-    public ResponseEntity<?> quitRoom(@RequestParam String selectedRoomId, @RequestParam String uid) {
-        chatService.deleteChatMember(selectedRoomId, uid);
-        return null;
+    public ResponseEntity<?> quitRoom(@RequestBody ChatRoomDTO chatRoomDTO) {
+        log.info("chatRoomDTO : " + chatRoomDTO);
+        String roomId = chatRoomDTO.getId();
+        String uid = chatRoomDTO.getLeader();
+        String status = chatService.deleteChatMember(uid, roomId);
+        if (status == null) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(status);
+        }
     }
 
     @PatchMapping("/frequentRoom")
@@ -90,6 +107,29 @@ public class ChatController {
         } else {
             return ResponseEntity.ok("error");
         }
+    }
+
+    @PatchMapping("/roomName")
+    public ResponseEntity<?> updateRoomName(@RequestBody ChatRoomDTO chatRoomDTO) {
+        log.info("chatRoomDTO : " + chatRoomDTO);
+        String roomId = chatRoomDTO.getId();
+        String newName = chatRoomDTO.getChatRoomName();
+        ChatRoomDocument savedDocument = chatService.updateRoomName(roomId, newName);
+        log.info("savedDocument : " + savedDocument);
+        if (savedDocument != null) {
+            return ResponseEntity.ok(savedDocument.getChatRoomName());
+        } else {
+            return ResponseEntity.ok("error");
+        }
+    }
+
+    @PatchMapping("/chatMembers")
+    public ResponseEntity<?> updateChatMembers(@RequestBody ChatRoomDTO chatRoomDTO) {
+        ChatRoomDocument savedDocument = chatService.updateChatMembers(chatRoomDTO.getId(), chatRoomDTO.getMembers());
+        if (savedDocument != null) {
+            return ResponseEntity.ok("success");
+        }
+        return ResponseEntity.ok("failure");
     }
 
     @GetMapping("/member/{uid}")
@@ -159,7 +199,7 @@ public class ChatController {
     // 읽음 상태 업데이트
     @PostMapping("/markAsRead")
     public void markAsRead(
-           @RequestBody ChatMessageDTO chatMessageDTO
+            @RequestBody ChatMessageDTO chatMessageDTO
     ) {
         log.info("markAsRead - chatMessageDTO : " + chatMessageDTO);
         String uid = chatMessageDTO.getSender();
@@ -178,7 +218,6 @@ public class ChatController {
         // 읽지 않은 메시지 수 및 마지막 메시지 업데이트
         chatService.updateUnreadCountsAndLastMessageAndLastTimeStamp(chatMessageDocument.getRoomId(), chatMessageDocument.getSender());
     }
-
 
 
 }

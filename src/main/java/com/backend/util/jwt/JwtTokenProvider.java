@@ -36,7 +36,6 @@ public class JwtTokenProvider {
                     .claim("id", id)
                     .claim("role", role)
                     .claim("name",username )
-                    .claim("aud", "remark42")
                     .signWith(SignatureAlgorithm.HS256, getSigningKey())
                     .compact();
         }else{
@@ -49,7 +48,6 @@ public class JwtTokenProvider {
                     .claim("id", id)
                     .claim("role", role)
                     .claim("name",username )
-                    .claim("aud", "remark42")
                     .signWith(SignatureAlgorithm.HS256, getSigningKey())
                     .compact();
         }
@@ -125,25 +123,6 @@ public class JwtTokenProvider {
         return false;
     }
 
-    public String createRemark42Token(String username, Long id) {
-        Date now = new Date();  // 현재 시간
-        long expireTime = now.getTime() + 3600 * 1000;  // 1시간 후 만료
-
-        Map<String, Object> remark42Claims = new HashMap<>();
-        remark42Claims.put("sub", username);
-        remark42Claims.put("name", username);
-        remark42Claims.put("id", id.toString());
-        remark42Claims.put("iat", now.getTime() / 1000);
-        remark42Claims.put("exp", expireTime / 1000);
-        remark42Claims.put("aud", "remark42");
-        remark42Claims.put("iss", "remark42");
-
-        return Jwts.builder()
-                .setHeaderParam("typ", "JWT")
-                .setClaims(remark42Claims)
-                .signWith(SignatureAlgorithm.HS256, getSigningKey())
-                .compact();
-    }
 
 
 }

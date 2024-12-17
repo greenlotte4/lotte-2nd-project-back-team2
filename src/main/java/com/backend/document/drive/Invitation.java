@@ -22,9 +22,9 @@ public class Invitation {
     private String id;                  // 초대 고유 ID
     private String email;               // 초대된 사용자 이메일
     private String type;
-    private String Id;            // 공유된 폴더 또는 파일 ID
+    private String sharedId;            // 공유된 폴더 또는 파일 ID
     @Builder.Default
-    private String status="PENDING";              // 초대 상태 (PENDING, ACCEPTED, DECLINED, CANCELLED)
+    private String status="PENDING";              // 초대 상태 (PENDING, ACCEPTED, DECLINED, CANCELLED,EXPIRED)
     private String permission;          // 권한 (READ, WRITE, FULL)
 
     @CreatedDate
@@ -35,7 +35,7 @@ public class Invitation {
     private LocalDateTime expiredAt;    // 초대 만료 시간 (옵션)
 
     @PrePersist
-    protected void onExpiredAT() {
+    public void onExpiredAT() {
         if (expiredAt == null) { // 만료일이 설정되어 있지 않은 경우에만 설정
             expiredAt = LocalDateTime.now().plusDays(2); // 현재 시간으로부터 2일 후
         }
@@ -44,7 +44,11 @@ public class Invitation {
     private void update(String id,LocalDateTime expiredAt,LocalDateTime createdAt){
         this.expiredAt = expiredAt;
         this.createdAt = createdAt;
-        this.id= id;
+        this.sharedId= id;
+    }
+
+    public void setState(String state){
+        this.status=state;
     }
 
 

@@ -91,6 +91,7 @@ public class Folder {
                 .isPinned(this.isPinned)
                 .shareDepts(this.sharedDepts)
                 .sharedUsers(this.sharedUsers)
+                .invitations(this.invitations)
                 .target(this.target)
                 .build();
     }

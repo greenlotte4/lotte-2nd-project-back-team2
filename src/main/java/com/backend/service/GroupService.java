@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.document.chat.ChatMemberDocument;
 import com.backend.dto.request.PostDepartmentReqDto;
 import com.backend.dto.request.admin.group.PostAdminGroupDepartment;
 import com.backend.dto.response.GetAdminSidebarGroupsRespDto;
@@ -22,6 +23,7 @@ import com.backend.repository.GroupRepository;
 import com.backend.repository.UserRepository;
 import com.backend.repository.calendar.CalendarMapperRepository;
 import com.backend.repository.calendar.CalendarRepository;
+import com.backend.repository.chat.ChatMemberRepository;
 import com.backend.util.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,6 +45,7 @@ public class GroupService {
     private final GroupMapperRepository groupMapperRepository;
     private final CalendarRepository calendarRepository;
     private final CalendarMapperRepository calendarMapperRepository;
+    private final ChatMemberRepository chatMemberRepository;
 
 
     public ResponseEntity<?> postDepartment(PostDepartmentReqDto dto) {
@@ -401,6 +404,7 @@ public class GroupService {
         List<Long> ids = dto.getUsers();
         List<GroupMapper> mappers = new ArrayList<>();
         List<CalendarMapper> calendarMappers = new ArrayList<>();
+        List<ChatMemberDocument> chatMemberDocuments = new ArrayList<>();
         for (Long id : ids) {
             Optional<User> user = userRepository.findById(id);
             if(user.isEmpty()){
@@ -418,9 +422,15 @@ public class GroupService {
 
             calendarMappers.add(calendarMapper);
             mappers.add(groupMapper);
+
+            // 12.16 전규찬 채팅용 유저 정보에 그룹명 입력 메서드 추가
+            ChatMemberDocument chatMemberDocument = chatMemberRepository.findByUid(user.get().getUid());
+            chatMemberDocument.setGroup(dto.getDepName());
+            chatMemberDocuments.add(chatMemberDocument);
         }
         groupMapperRepository.saveAll(mappers);
         calendarMapperRepository.saveAll(calendarMappers);
+        chatMemberRepository.saveAll(chatMemberDocuments);
 
         return ResponseEntity.ok("부서 등록이 완료되었습니다.");
     }
@@ -465,6 +475,7 @@ public class GroupService {
         List<Long> ids = dto.getUsers();
         List<GroupMapper> mappers = new ArrayList<>();
         List<CalendarMapper> calendarMappers = new ArrayList<>();
+        List<ChatMemberDocument> chatMemberDocuments = new ArrayList<>();
         for (Long id : ids) {
             Optional<User> user = userRepository.findById(id);
             if(user.isEmpty()){
@@ -482,9 +493,15 @@ public class GroupService {
 
             calendarMappers.add(calendarMapper);
             mappers.add(groupMapper);
+
+            // 12.16 전규찬 채팅용 유저 정보에 그룹명 입력 메서드 추가
+            ChatMemberDocument chatMemberDocument = chatMemberRepository.findByUid(user.get().getUid());
+            chatMemberDocument.setGroup(dto.getDepName());
+            chatMemberDocuments.add(chatMemberDocument);
         }
         groupMapperRepository.saveAll(mappers);
         calendarMapperRepository.saveAll(calendarMappers);
+        chatMemberRepository.saveAll(chatMemberDocuments);
 
         return ResponseEntity.ok("팀 등록이 완료되었습니다.");
     }
