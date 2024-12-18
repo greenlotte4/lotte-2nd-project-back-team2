@@ -14,6 +14,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Log4j2
@@ -76,10 +77,10 @@ public class ProjectController {
 
     @MessageMapping("/project/{projectId}/task/{type}")
     public void task(@DestinationVariable Long projectId,
-                           @DestinationVariable String type,
-                           @Payload GetProjectTaskDTO dto) {
+                     @DestinationVariable String type,
+                     @Payload GetProjectTaskDTO dto) {
         GetProjectTaskDTO saved = dto;
-
+        log.info(saved);
         if (type.equals("deleted")) {       // 태스크 삭제
             projectService.delete("task", dto.getId());
         } else {                            // 태스크 생성, 수정
