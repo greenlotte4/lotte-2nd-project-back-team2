@@ -316,16 +316,23 @@ public class GroupService {
         return ResponseEntity.ok(dtos);
     }
 
-    public Page<GetGroupsAllDto> getGroupsAll(int page) {
+    public Page<GetGroupsAllDto> getGroupsAll(int page,String company) {
         Pageable pageable = PageRequest.of(page,5);
-        Page<Group> groups = groupRepository.findAllByCompanyAndStatusIsNot("1246857",0,pageable);
+        if(company.equals("personalUser")){
+            return null;
+        }
+        Page<Group> groups = groupRepository.findAllByCompanyAndStatusIsNot(company,0,pageable);
         Page<GetGroupsAllDto> dtos = groups.map(Group::toGetGroupsAllDto);
         return dtos;
     }
 
-    public Page<GetGroupsAllDto> getGroupsAllByKeyword(int page, String keyword) {
+    public Page<GetGroupsAllDto> getGroupsAllByKeyword(int page, String keyword,String company) {
         Pageable pageable = PageRequest.of(page,5);
-        Page<Group> groups = groupRepository.findAllByCompanyAndNameContainingAndStatusIsNot("1246857",keyword,0,pageable);
+        if(company.equals("personalUser")){
+            //개인사용자일땐,부서없음
+            return null;
+        }
+        Page<Group> groups = groupRepository.findAllByCompanyAndNameContainingAndStatusIsNot(company,keyword,0,pageable);
         Page<GetGroupsAllDto> dtos = groups.map(Group::toGetGroupsAllDto);
         return dtos;
     }

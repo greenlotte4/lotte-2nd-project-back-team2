@@ -124,6 +124,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                     request.setAttribute("uid",auth.getUid());
                     request.setAttribute("role",auth.getRole());
                     request.setAttribute("id", auth.getId());
+                    request.setAttribute("company",auth.getCompany());
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             auth.getId(), null, List.of(new SimpleGrantedAuthority(auth.getRole())));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -148,9 +149,11 @@ public class SecurityConfig implements WebMvcConfigurer {
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
             Long id = claims.get("id",Long.class);
+            String company = claims.get("company",String.class);
             log.info("토큰에서 추출한 사용자명: {}", username);
             log.info("토큰에서 추출한 역할: {}", role);
             log.info("토큰아이디추출: {}", id);
+            log.info("토큰 회사 추출: {}", company);
 
             if (username == null || role == null) {
                 log.error("사용자명 또는 역할이 null입니다. 토큰: {}", token);
@@ -168,6 +171,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                     .id(id)
                     .uid(username)
                     .role(role)
+                    .company(company)
                     .build();
 
             return auth;

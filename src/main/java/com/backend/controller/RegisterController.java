@@ -142,8 +142,8 @@ public class RegisterController {
 
             //등록시 드라이브 생성
             NewDriveRequest newDriveRequest = NewDriveRequest.builder()
-                    .type("drive")
-                    .description(insertUser.getName()+"의 드라이브")
+                    .type("ROOT")
+                    .description(insertUser.getUid()+"의 드라이브")
                     .driveMaster(insertUser.getUid())
                     .order(0)
                     .owner(insertUser.getUid())

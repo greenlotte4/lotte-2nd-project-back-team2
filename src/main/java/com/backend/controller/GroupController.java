@@ -5,6 +5,7 @@ import com.backend.dto.response.GetAdminUsersRespDto;
 import com.backend.dto.response.group.GetGroupsAllDto;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.service.GroupService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.coyote.Response;
@@ -122,14 +123,16 @@ public class GroupController {
     public ResponseEntity<?> getAllGroups(
             @RequestParam int page,
             @RequestParam(value = "keyword",defaultValue = "") String keyword,
-            @RequestParam(value = "id", defaultValue = "0") Long id
+            @RequestParam(value = "id", defaultValue = "0") Long id,
+            HttpServletRequest request
     ) {
         Map<String, Object> map = new HashMap<>();
         Page<GetGroupsAllDto> dtos;
+        String company = (String) request.getAttribute("company");
         if(!keyword.equals("")&&id==0){
-            dtos = groupService.getGroupsAllByKeyword(page,keyword);
+            dtos = groupService.getGroupsAllByKeyword(page,keyword,company);
         } else {
-            dtos = groupService.getGroupsAll(page);
+            dtos = groupService.getGroupsAll(page,company);
         }
 
         map.put("groups", dtos.getContent());

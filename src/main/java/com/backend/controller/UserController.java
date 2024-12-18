@@ -54,23 +54,30 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    // 12.01 이상훈 전체유저 무한스크롤 요청
+    // 12.01 이상훈 전체유저 무한스크롤 요청  // 12.18 하진희 company 조건 추가
     @GetMapping("/users/all")
     public ResponseEntity<?> getAllUser2(
             @RequestParam int page,
             @RequestParam (value = "keyword", defaultValue = "") String keyword,
-            @RequestParam(value = "id", defaultValue = "0") Long id
+            @RequestParam(value = "id", defaultValue = "0") Long id,
+            HttpServletRequest request
     ){
         Map<String, Object> map = new HashMap<>();
         Page<GetUsersAllDto> dtos;
+        String company =(String) request.getAttribute("company");
+
         if(!keyword.equals("")&&id==0){
             dtos = userService.getUsersAllByKeyword(page,keyword);
         } else if (!keyword.equals("")&&id!=0) {
-            dtos = userService.getUsersAllByKeywordAndGroup(page,keyword,id);
+            dtos = userService.getUsersAllByKeywordAndGroup(page,keyword,id,company);
         } else if (keyword.equals("")&& id!=0) {
-            dtos = userService.getUsersAllByGroup(page,id);
+            dtos = userService.getUsersAllByGroup(page,id,company);
         } else {
-            dtos = userService.getUsersAll(page);
+            dtos = userService.getUsersAll(page,company);
+        }
+
+        if (dtos == null) {
+            dtos = Page.empty(); // Page.empty()는 안전한 빈 Page 객체를 반환
         }
 
         map.put("users", dtos.getContent());

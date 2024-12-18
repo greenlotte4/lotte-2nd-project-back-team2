@@ -42,7 +42,7 @@ public class FolderDto {
     private String sharedUser;
     private String sharedDept;
     private String parentPath;
-    private String target;
+    private int target;
 
 
     private List<ShareDept> shareDepts = new ArrayList<>();

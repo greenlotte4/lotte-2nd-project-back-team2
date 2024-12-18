@@ -22,7 +22,7 @@ public class JwtTokenProvider {
     private String issuer;
     // 사용자 이름
 
-    public String createToken(String username, String role, Long id, String type) {
+    public String createToken(String username, String role, Long id, String company, String type) {
         Date now = new Date();  // 현재 시간
         Date expireDate = null;
 
@@ -36,6 +36,7 @@ public class JwtTokenProvider {
                     .claim("id", id)
                     .claim("role", role)
                     .claim("name",username )
+                    .claim("company", company)
                     .signWith(SignatureAlgorithm.HS256, getSigningKey())
                     .compact();
         }else{
@@ -48,6 +49,7 @@ public class JwtTokenProvider {
                     .claim("id", id)
                     .claim("role", role)
                     .claim("name",username )
+                    .claim("company", company)
                     .signWith(SignatureAlgorithm.HS256, getSigningKey())
                     .compact();
         }

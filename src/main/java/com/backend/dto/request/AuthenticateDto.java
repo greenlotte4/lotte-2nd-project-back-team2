@@ -12,4 +12,5 @@ public class AuthenticateDto {
     private Long id;
     private String uid;
     private String role;
+    private String company;
 }

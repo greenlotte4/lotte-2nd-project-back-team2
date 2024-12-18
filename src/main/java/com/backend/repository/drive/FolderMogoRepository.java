@@ -18,8 +18,9 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
     Optional<Folder> findByParentId(String parentId);
     Folder findByName(String name);
 
+    Folder findByTypeAndOwnerId(String type, String ownerId);
 
-    List<Folder> findByOwnerIdAndParentIdAndStatusIsNot(String uid, String parentId, int status);
+    List<Folder> findByOwnerIdAndParentIdAndStatusIsNot(String ownerId, String parentId, int status);
     List<Folder> findByOwnerIdAndIsPinnedAndStatus(String uid, int isPinned, int status);
     List<Folder> findByOwnerIdAndParentIdIsNotNullAndStatusIsNotOrderByUpdatedAtDesc(String uid, int status);
 
@@ -29,7 +30,7 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
 
     Folder findFolderByNameAndParentIdAndStatusIsNot(String name, String parentId,int status);
 
-    List<Folder> findBySharedUsersUidAndTarget(String userId,String target);
+    List<Folder> findBySharedUsersUidAndTarget(String userId,int target);
 
     List<Folder> findBySharedUsersUid(String uid);
 

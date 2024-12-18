@@ -60,8 +60,9 @@ public class AuthController {
 
             UserDto userDto = user.get().toSliceDto();
             log.info("로그인 컨트롤러!!!!:" +userDto);
-            String accessToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(), "access");
-            String refreshToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(), "refresh");
+            String company = (!userDto.getCompany().isEmpty() || userDto.getCompany() != null) ? userDto.getCompany() : "PersonalUser";
+            String accessToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(),company, "access");
+            String refreshToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(),company, "refresh");
 
             //쿠키에 저장해라
             Cookie cookie = new Cookie("refresh_token", refreshToken);
@@ -91,6 +92,7 @@ public class AuthController {
             response.put("refresh_token", refreshToken); // Refresh 토큰
             response.put("role",user.get().getRole());
             response.put("user",userDto1);
+            response.put("company",company);
 
             user.get().updateLoginDate(LocalDateTime.now());
             return ResponseEntity.ok().body(response);
@@ -147,7 +149,8 @@ public class AuthController {
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
             Long id = claims.get("id",Long.class);
-            String newAccessToken = tokenProvider.createToken(username, role, id, "access");
+            String company = claims.get("company",String.class);
+            String newAccessToken = tokenProvider.createToken(username, role, id, company,"access");
                 log.info("여긴가?2"+newAccessToken);
 
             return ResponseEntity.ok(Map.of("accessToken", newAccessToken));

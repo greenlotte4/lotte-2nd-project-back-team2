@@ -29,7 +29,7 @@ public class Folder {
     private String folderUUID;
     private String name; // 폴더 이름
     private String ownerId;
-    private String type; //Drive, root, folder
+    private String type; //DRIVE, ROOT, FOLDER
     private Double order; // 폴더 순서 (같은 부모 폴더 내에서의 정렬)
     private String description; // 폴더 설명
     @CreationTimestamp
@@ -65,7 +65,7 @@ public class Folder {
     private List<Invitation> invitations = new ArrayList<>();
 
     @Builder.Default
-    private String target="";
+    private int target=0;
 
     @Builder.Default
     private int isPinned = 0; // 1: 고정 폴더
@@ -106,7 +106,7 @@ public class Folder {
 
     public void updateSharedDept(String newSharedDept){this.sharedDept = newSharedDept;}
     public void updateSharedUsers(List<SharedUser> newSharedUsers){this.sharedUsers = newSharedUsers;}
-    public void setTarget(){this.target="target";}
+    public void setTarget(){this.target=1;}
 
 }
 
