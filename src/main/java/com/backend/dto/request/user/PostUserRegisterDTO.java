@@ -28,4 +28,5 @@ public class PostUserRegisterDTO {
     private Long paymentId; //카드인포 아이디
     private String company; //회사코드
     private String companyName; //회사이름
+    private int level;
 }

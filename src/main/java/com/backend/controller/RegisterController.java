@@ -35,7 +35,7 @@ public class RegisterController {
     @GetMapping("/terms")
     public ResponseEntity<?> termsList(){
         List<TermsDTO> termsDTOS = userService.getTermsAll();
-        log.info("텀즈 컨트롤러 접속"+termsDTOS);
+
         if(termsDTOS.isEmpty()){
             return ResponseEntity.noContent().build();
         }else{
@@ -99,7 +99,8 @@ public class RegisterController {
             if (dto.getGrade() == 0) {
                 Boolean companyResult = userService.validateCompany(dto.getCompany());
                 if(companyResult){
-                    dto.setRole(Role.WORKER);
+                    dto.setGrade(1);
+                    dto.setRole(Role.USER);
                 }else{
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("not found company");
                 }
@@ -108,11 +109,13 @@ public class RegisterController {
             CardInfo cardInfo = null;
             if (dto.getGrade() == 3 || dto.getGrade() == 2) {
                 dto.setRole(dto.getGrade() == 3 ? Role.COMPANY : Role.USER);
+                dto.setLevel(dto.getGrade() == 3 ? 7 : 0);
                 dto.setDay(now);
                 paymentInfoDTO.setActiveStatus(1);
                 cardInfo = userService.insertPayment(paymentInfoDTO);
+            }else if (dto.getGrade() == 1) {
+                dto.setLevel(0);
             }
-
 
             User insertUser = userService.insertUser(dto);
             if (insertUser == null) {

@@ -193,7 +193,7 @@ public class UserService {
                             .country(dto.getCountry())
                             .addr2(dto.getAddr2())
                             .status(1)
-                            .level(0)
+                            .level(dto.getLevel())
                             .day(dto.getDay())
                             .company(dto.getCompany())
                             .companyName(dto.getCompanyName())
@@ -235,6 +235,7 @@ public class UserService {
                                 .paymentCardNick(paymentInfoDTO.getPaymentCardNick())
                                 .paymentCardExpiration(paymentInfoDTO.getPaymentCardExpiration())
                                 .paymentCardCvc(paymentInfoDTO.getPaymentCardCvc())
+                                .cardCompany(paymentInfoDTO.getCardCompany())
                                 .build();
         CardInfo cardInfo = cardInfoRepository.save(entity);
         return cardInfo;

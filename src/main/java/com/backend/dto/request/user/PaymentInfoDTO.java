@@ -17,4 +17,5 @@ public class PaymentInfoDTO {
     private String paymentCardExpiration; // 카드만료 년월
     private String paymentCardCvc; // cvc
     private int autoPayment; // 자동결제여부
+    private String cardCompany;
 }
