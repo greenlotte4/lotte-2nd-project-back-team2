@@ -13,4 +13,5 @@ public class GetCalendarContentNameDto {
     private String color;
     private String stime;
     private Long id;
+    private String memo;
 }

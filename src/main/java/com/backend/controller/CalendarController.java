@@ -20,7 +20,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
-public class                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              CalendarController {
+public class CalendarController {
 
     private final CalendarService calendarService;
 
@@ -220,5 +220,18 @@ public class                                                                    
         ResponseEntity<?> response = calendarService.getGroupIds(id);
         return response;
     }
+    @GetMapping("/calendar/content/name/next")
+    public ResponseEntity<?> getCalendarContentNext (HttpServletRequest req) {
+        Object idObj = req.getAttribute("id");
+        Long id;
+        if (idObj != null) {
+            id = Long.valueOf(idObj.toString());  // 문자열을 Long으로 변환
+        } else {
+            id= 0L;
+        }
+        ResponseEntity<?> response = calendarService.getCalendarContentNext(id);
+        return response;
+    }
+
 
 }

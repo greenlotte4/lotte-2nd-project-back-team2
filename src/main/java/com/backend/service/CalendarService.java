@@ -26,10 +26,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -570,5 +572,47 @@ public class CalendarService {
         List<CalendarAlert> alerts = calendarAlertRepository.findAllByDateBetweenAndTime(start, end,HM);
         System.out.println(alerts);
         messagingTemplate.convertAndSend("/topic/alert",alerts);
+    }
+
+    //2024/12/18 박연화 추가
+    public ResponseEntity<?> getCalendarContentNext(Long userId) {
+        Optional<User> user = userRepository.findById(userId);
+        if(user.isEmpty()){
+            return ResponseEntity.badRequest().body("로그인 정보가 일치하지 않습니다...");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfTomorrow = now.plusDays(1).toLocalDate().atStartOfDay();
+        LocalDateTime endOfTomorrow = startOfTomorrow.plusDays(1).minusSeconds(1);
+        LocalDateTime endOfNextWeek = now.plusWeeks(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).toLocalDate().atTime(23, 59, 59);
+
+        List<CalendarContent> calendarContents = calendarMapperRepository
+                .findAllContentsWithinDateRange(user.get(),startOfTomorrow, endOfNextWeek);
+        if(calendarContents.isEmpty()){
+            return ResponseEntity.ok().body(null);
+        }
+        log.info("내일부터 다음주까지의 캘린더 "+calendarContents.toString());
+        List<CalendarContent> contents = calendarContents.stream().filter( v -> {
+            boolean isStatus = v.getStatus()!=0;
+            LocalDateTime startDate = v.getCalendarStartDate();
+            LocalDateTime endDate = v.getCalendarEndDate();
+
+            return startDate.isBefore(endOfTomorrow) && endDate.isAfter(startOfTomorrow) && isStatus;
+        }).toList();
+
+        log.info("필터링 한 거요 "+contents.toString());
+
+        List<GetCalendarContentNameDto> dtos = new ArrayList<>();
+        Map<String, List<GetCalendarContentNameDto>> map = new HashMap<>();
+        if(contents.isEmpty()){
+            dtos = calendarContents.stream().map(CalendarContent::toGetCalendarContentNameDto).toList();
+            map.put("nextWeek",dtos);
+        }else{
+            log.info("여기 안 들어와?");
+            dtos = contents.stream().map(CalendarContent::toGetCalendarContentNameDto).toList();
+            map.put("tomorrow",dtos);
+        }
+        log.info("전송 데이터 "+ map.toString());
+        return ResponseEntity.ok(map);
     }
 }

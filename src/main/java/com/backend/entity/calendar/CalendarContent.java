@@ -78,6 +78,7 @@ public class CalendarContent {
                 .name(name)
                 .color(calendar.getColor())
                 .stime(stime)
+                .memo(memo)
                 .build();
     }
 
