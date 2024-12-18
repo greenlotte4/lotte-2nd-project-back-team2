@@ -19,6 +19,7 @@ public class ChatMapperDTO {
     private String chatRoomId;
     private LocalDateTime lastReadTimeStamp; // 사용자가 마지막으로 읽은 메시지 시간
     private LocalDateTime joinedAt; // 사용자가 채팅방에 가입한 시간
+    private int isFrequent; // 즐겨찾기 여부
 
     public ChatMapperDocument toDocument() {
         return ChatMapperDocument.builder()
@@ -27,6 +28,7 @@ public class ChatMapperDTO {
                 .chatRoomId(this.chatRoomId)
                 .lastReadTimeStamp(this.lastReadTimeStamp)
                 .joinedAt(this.joinedAt)
+                .isFrequent(this.isFrequent)
                 .build();
     }
 }

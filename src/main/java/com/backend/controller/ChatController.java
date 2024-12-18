@@ -1,12 +1,7 @@
 package com.backend.controller;
 
-import com.backend.document.chat.ChatMemberDocument;
-import com.backend.document.chat.ChatMessageDocument;
-import com.backend.document.chat.ChatResponseDocument;
-import com.backend.document.chat.ChatRoomDocument;
-import com.backend.dto.chat.ChatMemberDTO;
-import com.backend.dto.chat.ChatMessageDTO;
-import com.backend.dto.chat.ChatRoomDTO;
+import com.backend.document.chat.*;
+import com.backend.dto.chat.*;
 import com.backend.entity.user.User;
 import com.backend.service.ChatService;
 import com.backend.service.GroupService;
@@ -14,6 +9,7 @@ import com.backend.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -22,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Log4j2
@@ -39,6 +37,18 @@ public class ChatController {
     public ResponseEntity<?> getAllChatRooms(@PathVariable String userUid) {
 
         List<ChatRoomDTO> chatRoomDTOS = chatService.getAllChatRoomsByUserId(userUid);
+        List<ChatMapperDTO> chatMapperDTOS = chatService.getAllChatMappersByUserId(userUid);
+
+        // ChatMapperDTO 리스트를 chatRoomId를 키로 하는 맵으로 변환합니다.
+        Map<String, Integer> chatMapperMap = chatMapperDTOS.stream()
+                .collect(Collectors.toMap(ChatMapperDTO::getChatRoomId, ChatMapperDTO::getIsFrequent));
+
+        // ChatRoomDTO 리스트를 순회하며 chatRoomFavorite을 설정합니다.
+        chatRoomDTOS.forEach(chatRoomDTO -> {
+            Integer isFrequent = chatMapperMap.get(chatRoomDTO.getId());
+            // isFrequent가 null인 경우 기본값(0) 설정
+            chatRoomDTO.setChatRoomFavorite(isFrequent != null ? isFrequent : 0);
+        });
 
         if (chatRoomDTOS.isEmpty()) {
             return ResponseEntity.noContent().build();
@@ -66,23 +76,17 @@ public class ChatController {
         return ResponseEntity.ok(members);
     }
 
-    @Transactional
     @PostMapping("/room")
-    public ResponseEntity<?> createRoom(
-            @ModelAttribute ChatRoomDTO chatRoomDTO) {
-
-
-        String roomId = chatService.createChatRoom(chatRoomDTO);
-
-        if (roomId == null) {
-            return ResponseEntity.noContent().build();
-        } else {
-            User user = userService.getUserByuid(chatRoomDTO.getLeader());
-
-            String groupName = groupService.findGroupNameByUser(user);
-
+    public ResponseEntity<?> createChatRoom(@ModelAttribute ChatRoomDTO chatRoomDTO) {
+        String result = chatService.createChatRoom(chatRoomDTO);
+        if (result.startsWith("error:")) {
+            String errorMessage = result.substring(6);
+            if (errorMessage.contains("동일한 멤버로 구성된 채팅방")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse("error", errorMessage));
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse("error", errorMessage));
         }
-        return null;
+        return ResponseEntity.ok(new ApiResponse("success", result));
     }
 
     @DeleteMapping("/quitRoom")
@@ -99,13 +103,13 @@ public class ChatController {
     }
 
     @PatchMapping("/frequentRoom")
-    public ResponseEntity<?> updateFrequent(@RequestBody ChatRoomDTO chatRoomDTO) {
-
-        ChatRoomDocument savedDocument = chatService.updateChatRoomFavorite(chatRoomDTO);
-        if (savedDocument != null) {
+    public ResponseEntity<?> updateFrequent(@RequestBody ChatMapperDTO chatMapperDTO) {
+        log.info("chatMapperDTO : " + chatMapperDTO);
+        ChatMapperDocument savedDocument = chatService.updateChatMapperIsFrequent(chatMapperDTO);
+        if (savedDocument == null) {
+            return ResponseEntity.ok("failure");
+        }else {
             return ResponseEntity.ok("success");
-        } else {
-            return ResponseEntity.ok("error");
         }
     }
 

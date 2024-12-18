@@ -49,7 +49,7 @@ public class DriveController {
         log.info("New drive request: " + newDriveRequest);
         String uid= (String) request.getAttribute("uid");
         newDriveRequest.setOwner(uid);
-        Folder forFolder = folderService.getFolderName(uid);
+        Folder forFolder = folderService.getFolderName("ROOT",uid);
 
         //부모폴더생성
         if(forFolder == null) {
@@ -80,13 +80,30 @@ public class DriveController {
 
     //드라이브 안의 폴더 생성
     @PostMapping("/newFolder")
-    public void createFolder(@RequestBody NewDriveRequest newDriveRequest,HttpServletRequest request) {
+    public ResponseEntity createFolder(@RequestBody NewDriveRequest newDriveRequest,HttpServletRequest request) {
         log.info("New drive request: " + newDriveRequest);
 
         String uid= (String) request.getAttribute("uid");
         newDriveRequest.setOwner(uid);
 
         FolderDto folderDto = folderService.getParentFolder(newDriveRequest.getParentId());
+
+        //읽기 권한시 업로드 불가능
+        if(!folderDto.getOwnerId().equals(uid)){
+            Optional<String>  opt = folderDto.getSharedUsers()
+                    .stream()
+                    .filter(sharedUser -> sharedUser.getUid().equals(uid)) // uid가 일치하는 사용자 찾기
+                    .map(sharedUser -> sharedUser.getPermission()) // 권한 추출
+                    .findFirst(); // 첫 번째 일치하는 권한 반환
+            if(opt.isPresent() && opt.get().equals("읽기")){
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("폴더 생성 권한이 없습니다.");
+            }
+
+        }
+
+
         newDriveRequest.setParentFolder(folderDto);
         newDriveRequest.setType("FOLDER");
         newDriveRequest.setShareDepts(folderDto.getShareDepts());
@@ -96,8 +113,13 @@ public class DriveController {
 
         //권한설정 저장
         permissionService.addPermission(folderId,uid,"folder",newDriveRequest.getPermissions());
+        if(folderId != null) {
+            return ResponseEntity.ok().body(folderId);
 
-
+        }else{
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("폴더 생성에 실패했습니다.");
+        }
     }
 
     //사이드바  폴더 리스트 불러오기
@@ -113,7 +135,7 @@ public class DriveController {
             return ResponseEntity.badRequest().body("UID is required.");
         }
         log.info("Get drive list  uid:"+uid);
-        Folder rootFolder = folderService.getFolderName(uid);
+        Folder rootFolder = folderService.getFolderName("ROOT",uid);
         if (rootFolder == null) {
             return ResponseEntity.ok().body("No folders found.");
         }
@@ -121,6 +143,7 @@ public class DriveController {
 
 
         List<FolderDto> shareFolderList= folderService.sharedFolder(uid);
+        log.info("공유된 내용이 없어?",shareFolderList);
 
         FolderResponseDto folderResponseDto  = FolderResponseDto.builder()
                 .folderDtoList(folderDtoList)
@@ -160,12 +183,15 @@ public class DriveController {
         if(parentFolder.getOwnerId().equals(uid)){
             subFolders = folderService.getSubFolders(uid,folderId);
             files = folderService.getFiles(folderId);
+
         }else{
             List<SharedUser> users = parentFolder.getSharedUsers();
             boolean isSharedUser = users.stream().anyMatch(user -> user.getId().equals(id));
 
             if(isSharedUser){
                 subFolders = folderService.getSharedSubFolders(id,folderId);
+                files = folderService.getFiles(folderId);
+
             }
 
         }
@@ -238,11 +264,28 @@ public class DriveController {
                                           @RequestParam("relativePaths") List<String> relativePaths, // 폴더 경로 배열 수신
                                           @RequestParam("fileMaxOrder") double fileMaxOrder,
                                           @RequestParam("folderMaxOrder") double folderMaxOrder,
-                                          @RequestParam("uid") String uid
+                                          @RequestParam("uid") String uid,HttpServletRequest request
     )  {
         double fileOrder = fileMaxOrder;
         double folderOrder = folderMaxOrder;
         FolderDto parentFolder = folderService.getParentFolder(folderId);
+
+
+        //읽기 권한시 업로드 불가능
+        if(!parentFolder.getOwnerId().equals(uid)){
+           Optional<String>  opt = parentFolder.getSharedUsers()
+                   .stream()
+                   .filter(sharedUser -> sharedUser.getUid().equals(uid)) // uid가 일치하는 사용자 찾기
+                   .map(sharedUser -> sharedUser.getPermission()) // 권한 추출
+                   .findFirst(); // 첫 번째 일치하는 권한 반환
+            if(opt.isPresent() && opt.get().equals("읽기")){
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("업로드 권한이 없습니다.");
+            }
+
+        }
+
         log.info("relativePaths:"+relativePaths);
 
         try {
@@ -332,16 +375,45 @@ public class DriveController {
 
     //폴더 삭제(status 변경만)
     @DeleteMapping("/{type}/delete/{Id}")
-    public ResponseEntity deleteFolder(@PathVariable String Id,@PathVariable String type ,@RequestParam String path){
-
+    public ResponseEntity deleteFolder(@PathVariable String Id,@PathVariable String type ,@RequestParam String path
+            ,@RequestParam String parentId
+            ,HttpServletRequest request){
+        Map<String ,String > result = new HashMap<>();
         log.info("Delete folder:"+Id+" path : "+path);
-        boolean result = folderService.goToTrash(Id,type);
-
-        if(result){
-            return ResponseEntity.ok().body("Folder deleted successfully");
+        String currentUser = (String) request.getAttribute("uid");
+        FolderDto parentFolder = folderService.getParentFolder(parentId);
+        //owner == uid일치시
+        if(parentFolder.getOwnerId().equals(currentUser)){
+            result =  folderService.goToTrash(Id,type,currentUser,"모든");
         }else{
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Folder delete failed");
+            Optional<String>  opt = parentFolder.getSharedUsers()
+                    .stream()
+                    .filter(sharedUser -> sharedUser.getUid().equals(currentUser)) // uid가 일치하는 사용자 찾기
+                    .map(sharedUser -> sharedUser.getPermission()) // 권한 추출
+                    .findFirst(); // 첫 번째 일치하는 권한 반환
+
+            if(opt.isPresent() && opt.get().equals("읽기")){
+                return ResponseEntity.badRequest().body("삭제 권한이 없습니다.");
+            }else if(opt.isPresent() && opt.get().equals("수정")){
+               result = folderService.goToTrash(Id,type,currentUser,"수정");
+            }else if(opt.isPresent() && opt.get().equals("모든")){
+                result = folderService.goToTrash(Id,type,currentUser,"모든");
+
+            }
+
         }
+        String response= result.get("result");
+        String message =  result.get("message");
+        if(response.equals("success")){
+            return ResponseEntity.ok().body(message);
+        }else{
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        }
+
+
+
+
+
     }
 
 
@@ -432,6 +504,34 @@ public class DriveController {
 
 
         return ResponseEntity.ok().body(response);
+    }
+
+    @DeleteMapping("/cleanAll")
+    public ResponseEntity cleanAll(HttpServletRequest request){
+        log.info("휴지통비우기 시작!!!!!!");
+        String uid = (String)request.getAttribute("uid");
+
+        List<FolderDto> subFolders = folderService.trashFolder(uid);
+        List<FileRequestDto> files = folderService.trashFile(uid);
+
+        int size = subFolders.size() + files.size();
+        if(size==0){
+            log.info("여기 비어있음");
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("empty");
+        }
+
+        DeletedRequest deletedRequest = DeletedRequest.builder()
+                .fileDtos(files)
+                .subFolders(subFolders)
+                .build();
+        boolean result = folderService.deleteAll(deletedRequest);
+
+        if(result){
+            return ResponseEntity.ok().body("Delete all files successfully");
+        }else{
+            return ResponseEntity.badRequest().body("Delete all files failed");
+        }
+
     }
 
     //폴더 복구,

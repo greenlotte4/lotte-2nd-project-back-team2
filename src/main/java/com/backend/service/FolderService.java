@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -172,8 +173,8 @@ public class FolderService {
     }
 
 
-    public Folder getFolderName(String uid){
-        return folderMogoRepository.findByName(uid);
+    public Folder getFolderName(String type,String uid){
+        return folderMogoRepository.findByTypeAndOwnerId(type,uid);
     }
     public Folder existFolder(String name,String parentId){
         return folderMogoRepository.findFolderByNameAndParentIdAndStatusIsNot(name,parentId,0);
@@ -373,21 +374,43 @@ public class FolderService {
 
     }
 
-    public boolean goToTrash(String id, String type){
-        if(type.equals("folder")){
-            Query query = new Query(Criteria.where("_id").is(id));
-            Update update = new Update().set("status", 0);
+    public Map<String ,String > goToTrash(String id, String type,String currentUser,String permission){
+        Map<String ,String > result = new HashMap<>();
+            if(type.equals("folder")){
+                Folder folder = folderMogoRepository.findById(id).orElseThrow();
+                if(folder.getOwnerId().equals(currentUser) || permission.equals("모든")){
+                    Query query = new Query(Criteria.where("_id").is(id));
+                    Update update = new Update()
+                            .set("status", 0);
+                    mongoTemplate.upsert(query, update, Folder.class);
+                     result.put("result","success");
+                     result.put("message","휴지통 이동 성공");
 
-            mongoTemplate.upsert(query, update, Folder.class);
-            return true;
-        }else if(type.equals("file")){
-            Query query = new Query(Criteria.where("_id").is(id));
-            Update update = new Update().set("status", 0);
+                }else{
+                    result.put("result","fail");
+                    result.put("message","삭제 권한이 없습니다.");
+                }
 
-            mongoTemplate.upsert(query, update, FileMogo.class);
-            return true;
-        }
-        return false;
+            }else if(type.equals("file")) {
+                FileMogo fileMogo = fileMogoRepository.findById(id).orElseThrow();
+                if (fileMogo.getOwnerUid().equals(currentUser) || permission.equals("모든")) {
+                    Query query = new Query(Criteria.where("_id").is(id));
+                    Update update = new Update().set("status", 0);
+
+                    mongoTemplate.upsert(query, update, FileMogo.class);
+                    result.put("result","success");
+                    result.put("message","휴지통 이동 성공");
+                } else {
+                    result.put("result","fail");
+                    result.put("message","삭제 권한이 없습니다.");
+                }
+
+            }
+
+            return result;
+
+
+
     }
 
 
@@ -603,6 +626,46 @@ public class FolderService {
                 delete("file", file);
             }
         }
+
+
+    }
+
+    public boolean deleteAll( DeletedRequest deletedRequest){
+        int result = 0;
+        int size = 0;
+        if(!deletedRequest.getFileDtos().isEmpty()){
+            List<FileRequestDto> files = deletedRequest.getFileDtos();
+            size += files.size();
+                for (FileRequestDto file : files) {
+                    if (file == null || file.getId().isEmpty()) {
+                        throw new IllegalArgumentException("File ID cannot be null or blank");
+                    }
+                    delete("file", file.getId());
+                    result++;
+                }
+        }
+        if(!deletedRequest.getSubFolders().isEmpty()){
+            List<FolderDto> subFolders = deletedRequest.getSubFolders();
+            size += subFolders.size();
+            if (subFolders != null && !subFolders.isEmpty()) {
+                for (FolderDto folder : subFolders) {
+                    if (folder == null || folder.getId().isBlank()) {
+                        throw new IllegalArgumentException("Folder ID cannot be null or blank");
+                    }
+                    delete("folder",  folder.getId());
+                    result++;
+                }
+            }
+
+        }
+
+        if(size == result){
+            return true;
+        }else{
+            return false;
+        }
+
+
 
 
     }
