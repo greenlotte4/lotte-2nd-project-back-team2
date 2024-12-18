@@ -67,7 +67,7 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
 
     public GetProjectCoworkerDTO toGetCoworkerDTO() {
         String group;
-        if(!user.getGroupMappers().isEmpty()){
+        if(user.getGroupMappers()!=null&&!user.getGroupMappers().isEmpty()){
             group = user.getGroupMappers().get(0).getGroup().getName();
         } else {
             group = "소속없음";
@@ -78,7 +78,7 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
                 .name(user.getName())
                 .email(user.getEmail())
                 .group(group)
-                .level(user.selectLevelString())
+                .level(user.getLevel()!=null?user.selectLevelString():null)
                 .canRead(canRead)
                 .canAddTask(canAddTask)
                 .canUpdateTask(canUpdateTask)
@@ -86,4 +86,5 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
                 .canEditProject(canEditProject)
                 .build();
     }
+
 }

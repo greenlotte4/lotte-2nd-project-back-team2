@@ -30,7 +30,7 @@ public class ProjectTask {
 
     private String title; // 할일
     private String content; // 세부사항
-    private int priority; // 중요도
+    private String priority; // 중요도
 
     private int status; // 완료, 미완료
     private int position;
@@ -48,10 +48,9 @@ public class ProjectTask {
     private List<ProjectComment> comments = new ArrayList<>();
 
     @Setter
-    @OneToMany(cascade = CascadeType.PERSIST, orphanRemoval = true)
-    @JoinColumn(name = "task_id")
+    @OneToMany(cascade = CascadeType.PERSIST, orphanRemoval = true, mappedBy = "task")
     @Builder.Default
-    private List<ProjectCoworker> associate = new ArrayList<>();
+    private List<ProjectAssign> assign = new ArrayList<>();
 
 //    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
 //    private List<TaskTag> tags = new ArrayList<>();
@@ -68,7 +67,7 @@ public class ProjectTask {
                 .duedate(duedate)
                 .comments(comments.stream().map(ProjectComment::toDTO).collect(Collectors.toList()))
                 .subTasks(subTasks.stream().map(ProjectSubTask::toDTO).collect(Collectors.toList()))
-                .associate(associate.stream().map(ProjectCoworker::toGetCoworkerDTO).collect(Collectors.toList()))
+                .assign(assign.stream().map(ProjectAssign::toDTO).collect(Collectors.toList()))
                 .build();
     }
 
@@ -82,11 +81,6 @@ public class ProjectTask {
         if (comments == null) {comments = new ArrayList<>();}
         comments.add(comment);
         comment.setTask(this);
-    }
-
-    public void addAssociate(ProjectCoworker asso) {
-        if (associate == null) {associate = new ArrayList<>();}
-        associate.add(asso);
     }
 
     @Override

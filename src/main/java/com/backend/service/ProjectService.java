@@ -190,6 +190,7 @@ public class ProjectService {
     }
 
     public GetProjectTaskDTO saveTask(GetProjectTaskDTO taskDTO) {
+        log.info("saveTask 0 : " + taskDTO);
         ProjectTask task = taskDTO.toProjectTask();
         log.info("saveTask 1 : " + task);
         ProjectColumn col = columnRepository.findById(task.getColumn().getId())

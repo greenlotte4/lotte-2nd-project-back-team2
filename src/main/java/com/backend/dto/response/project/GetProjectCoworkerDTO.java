@@ -1,5 +1,6 @@
 package com.backend.dto.response.project;
 
+import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectCoworker;
 import com.backend.entity.user.User;
 import lombok.*;
@@ -34,13 +35,26 @@ public class GetProjectCoworkerDTO {
     public ProjectCoworker toProjectCoworker() {
         return ProjectCoworker.builder()
                 .id(id)
-                .user(User.builder().uid(uid).build())
+                .user(User.builder().uid(uid).name(name).email(email).build())
                 .isOwner(isOwner)
                 .canRead(canRead)
                 .canAddTask(canAddTask)
                 .canUpdateTask(canUpdateTask)
                 .canDeleteTask(canDeleteTask)
                 .canEditProject(canEditProject)
+                .build();
+    }
+
+    public ProjectCoworker toProjectCoworkerForAsso() {
+        return ProjectCoworker.builder()
+                .user(User.builder().id(id).uid(uid).name(name).email(email).build())
+                .isOwner(isOwner)
+                .canRead(canRead)
+                .canAddTask(canAddTask)
+                .canUpdateTask(canUpdateTask)
+                .canDeleteTask(canDeleteTask)
+                .canEditProject(canEditProject)
+                .project(Project.builder().id(projectId).build())
                 .build();
     }
 
