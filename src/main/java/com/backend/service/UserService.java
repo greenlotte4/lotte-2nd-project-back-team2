@@ -6,6 +6,7 @@ import com.backend.dto.response.GetAdminUsersRespDto;
 import com.backend.dto.response.UserDto;
 import com.backend.dto.response.admin.user.GetGroupUsersDto;
 import com.backend.dto.response.user.GetUsersAllDto;
+import com.backend.dto.response.user.RespCardInfoDTO;
 import com.backend.dto.response.user.TermsDTO;
 import com.backend.entity.group.Group;
 import com.backend.entity.group.GroupMapper;
@@ -236,6 +237,9 @@ public class UserService {
                                 .paymentCardExpiration(paymentInfoDTO.getPaymentCardExpiration())
                                 .paymentCardCvc(paymentInfoDTO.getPaymentCardCvc())
                                 .cardCompany(paymentInfoDTO.getCardCompany())
+                                .globalPayment(paymentInfoDTO.getGlobalPayment())
+                                .autoPayment(paymentInfoDTO.getAutoPayment())
+                                .activeStatus(paymentInfoDTO.getActiveStatus())
                                 .build();
         CardInfo cardInfo = cardInfoRepository.save(entity);
         return cardInfo;
@@ -558,6 +562,60 @@ public class UserService {
             String encodedPwd = passwordEncoder.encode(pwd);
             log.info("인코딩 패스워드 "+encodedPwd);
             user.updatePass(encodedPwd);
+            userRepository.save(user);
+            return ResponseEntity.ok().build();
+        }
+    }
+
+    public ResponseEntity<?> getCardInfo(Long userId) {
+        List<CardInfo> cardInfos = cardInfoRepository.findAllByUserId(userId);
+        if(cardInfos.isEmpty()){
+            return ResponseEntity.ok().body("카드 정보가 없습니다.");
+        }
+        List<RespCardInfoDTO> dtos = cardInfos.stream().map( v -> {
+            RespCardInfoDTO dto = v.toDto();
+            return dto;
+        }).toList();
+        return ResponseEntity.ok().body(dtos);
+    }
+
+    public ResponseEntity<?> deletePayment(Long paymentId) {
+        try {
+            cardInfoRepository.deleteById(paymentId);
+            return ResponseEntity.ok().build();
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("결제정보 삭제 중 오류가 발생했습니다.");
+        }
+    }
+
+    public ResponseEntity addPayment(PaymentInfoDTO paymentInfoDTO, Long userId) {
+        CardInfo entity = CardInfo.builder()
+                .activeStatus(paymentInfoDTO.getActiveStatus())
+                .paymentCardNo(paymentInfoDTO.getPaymentCardNo())
+                .paymentCardNick(paymentInfoDTO.getPaymentCardNick())
+                .paymentCardExpiration(paymentInfoDTO.getPaymentCardExpiration())
+                .paymentCardCvc(paymentInfoDTO.getPaymentCardCvc())
+                .cardCompany(paymentInfoDTO.getCardCompany())
+                .globalPayment(paymentInfoDTO.getGlobalPayment())
+                .autoPayment(paymentInfoDTO.getAutoPayment())
+                .activeStatus(paymentInfoDTO.getActiveStatus())
+                .userId(userId)
+                .build();
+        CardInfo cardInfo = cardInfoRepository.save(entity);
+        if(cardInfo != null) {
+            return ResponseEntity.ok().body("저장 성공");
+        }else{
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+    }
+
+    public ResponseEntity<?> deleteAccount(Long userId) {
+        Optional<User> optUser = userRepository.findById(userId);
+        if(optUser.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }else{
+            User user = optUser.get();
+            user.updateStatus(0);
             userRepository.save(user);
             return ResponseEntity.ok().build();
         }
