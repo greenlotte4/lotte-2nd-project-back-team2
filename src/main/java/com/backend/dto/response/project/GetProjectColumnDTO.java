@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class GetProjectColumnDTO {
     private Long id;
+    private Long projectId;
 
     private String title;
     private String color;

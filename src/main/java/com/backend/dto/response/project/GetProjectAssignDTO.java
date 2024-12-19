@@ -12,6 +12,8 @@ import lombok.*;
 @NoArgsConstructor
 public class GetProjectAssignDTO {
     private Long id;
+
+    @ToString.Exclude
     private GetProjectTaskDTO task;
     private GetProjectCoworkerDTO user;
 

@@ -56,7 +56,7 @@ public class ProjectTask {
 //    private List<TaskTag> tags = new ArrayList<>();
 
     public GetProjectTaskDTO toGetProjectTaskDTO() {
-        return GetProjectTaskDTO.builder()
+        GetProjectTaskDTO task = GetProjectTaskDTO.builder()
                 .id(id)
                 .ProjectId(column.getProject().getId())
                 .columnId(column.getId())
@@ -69,6 +69,7 @@ public class ProjectTask {
                 .subTasks(subTasks.stream().map(ProjectSubTask::toDTO).collect(Collectors.toList()))
                 .assign(assign.stream().map(ProjectAssign::toDTO).collect(Collectors.toList()))
                 .build();
+        return task;
     }
 
     public void addSubTask(ProjectSubTask subtask) {

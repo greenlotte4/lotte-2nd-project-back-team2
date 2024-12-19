@@ -22,6 +22,7 @@ public class ChatMessageDTO {
     private String content; // 내용
     private String fileUrl; // 파일 Url
     private String sender; // 보낸 사람 아이디
+    private String senderName; // 보낸 사람 이름
     private LocalDateTime timeStamp; // 보낸 시간
     private long count;
 
@@ -34,6 +35,7 @@ public class ChatMessageDTO {
                 .content(this.content)
                 .fileUrl(this.fileUrl)
                 .sender(this.sender)
+                .senderName(this.senderName)
                 .timeStamp(this.timeStamp)
                 .build();
     }

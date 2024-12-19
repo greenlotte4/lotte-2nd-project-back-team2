@@ -26,7 +26,6 @@ public class GetProjectCommentDTO {
     private String content;
 
     private Long taskId;
-    private Long columnId;
     private Long projectId;
 
     @CreationTimestamp

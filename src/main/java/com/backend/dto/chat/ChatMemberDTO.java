@@ -24,6 +24,7 @@ public class ChatMemberDTO {
     private Integer level;
     private String group;
     private String profileUrl;
+    private String profileSName;
     private List<ChatMemberDTO> frequent_members = new ArrayList<>();
     private List<String> roomIds = new ArrayList<>();
 
@@ -36,6 +37,7 @@ public class ChatMemberDTO {
                 .level(this.level)
                 .group(this.group)
                 .profileUrl(this.profileUrl)
+                .profileSName(this.profileSName)
                 .frequent_members(this.frequent_members.stream().map(ChatMemberDTO::toDocument).toList())
                 .roomIds(this.roomIds)
                 .build();

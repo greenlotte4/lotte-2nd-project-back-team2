@@ -2,11 +2,9 @@ package com.backend.controller;
 
 import com.backend.document.chat.*;
 import com.backend.dto.chat.*;
-import com.backend.entity.user.User;
 import com.backend.service.ChatService;
 import com.backend.service.GroupService;
 import com.backend.service.UserService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -36,6 +34,8 @@ public class ChatController {
     @GetMapping("/room/{userUid}") // 유저 uid로 해당 유저가 속한 모든 채팅방 조회
     public ResponseEntity<?> getAllChatRooms(@PathVariable String userUid) {
 
+        log.info("userUid = " + userUid);
+
         List<ChatRoomDTO> chatRoomDTOS = chatService.getAllChatRoomsByUserId(userUid);
         List<ChatMapperDTO> chatMapperDTOS = chatService.getAllChatMappersByUserId(userUid);
 
@@ -57,8 +57,20 @@ public class ChatController {
         }
     }
 
+    @GetMapping("/{uid}")
+    public ResponseEntity<ChatMemberDocument> getUser(@PathVariable String uid) {
+        log.info("uid = " + uid);
+        ChatMemberDocument chatMemberDocument = chatService.getChatMember(uid);
+        if (chatMemberDocument == null) {
+            return ResponseEntity.notFound().build();
+        }else {
+            return ResponseEntity.ok(chatMemberDocument);
+        }
+    }
+
     @GetMapping("/roomInfo/{roomId}") // 채팅방 id로 해당 채팅방의 정보 조회
     public ResponseEntity<?> getChatRoomInfo(@PathVariable String roomId) {
+
         ChatRoomDTO chatRoomDTO = chatService.getChatRoomInfo(roomId);
         if (chatRoomDTO == null) {
             return ResponseEntity.noContent().build();

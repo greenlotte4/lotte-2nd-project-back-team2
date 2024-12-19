@@ -24,7 +24,10 @@ public class ChatMemberDocument {
     private Integer level;
     private String group;
     private String profileUrl;
+    private String profileSName;
+    @Builder.Default
     private List<ChatMemberDocument> frequent_members = new ArrayList<>();
+    @Builder.Default
     private List<String> roomIds = new ArrayList<>();
 
     private List<ChatMapperDocument> chatMappers;
@@ -39,6 +42,7 @@ public class ChatMemberDocument {
                 .level(this.level)
                 .group(this.group)
                 .profileUrl(this.profileUrl)
+                .profileSName(this.profileSName)
                 .frequent_members(this.frequent_members.stream().map(ChatMemberDocument::toDTO).collect(Collectors.toList()))
                 .roomIds(this.roomIds)
                 .build();

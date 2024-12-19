@@ -14,6 +14,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Log4j2
@@ -38,10 +40,17 @@ public class ProjectController {
         return ResponseEntity.ok().body(map);
     }
 
-    @GetMapping("/project/{id}") // 프로젝트 페이지 출력
-    public ResponseEntity<?> readProject(@PathVariable Long id) {
-        GetProjectDTO dto = projectService.getProject(id);
+    @GetMapping("/project/{projectId}") // 프로젝트 페이지 출력
+    public ResponseEntity<?> getProject(@PathVariable Long projectId) {
+        GetProjectDTO dto = projectService.getProject(projectId);
         return ResponseEntity.ok().body(dto);
+    }
+    @GetMapping("/project/{projectId}/column") // 프로젝트 페이지 출력
+    public ResponseEntity<?> getColumn(@PathVariable Long projectId) {
+        List<GetProjectColumnDTO> columnList = projectService.getColumns(projectId);
+        Map<String,Object> result = new HashMap<>();
+        result.put("columns", columnList);
+        return ResponseEntity.ok().body(result);
     }
 
     @DeleteMapping("/project/{id}")
@@ -105,7 +114,22 @@ public class ProjectController {
 
         projectService.sendBoardUpdate(projectId, "SUBTASK_"+type.toUpperCase(),  saved);
     }
+    @MessageMapping("/project/{projectId}/comment/{type}")
+    public void comment(@DestinationVariable Long projectId,
+                        @DestinationVariable String type,
+                        @Payload GetProjectCommentDTO dto) {
+        GetProjectCommentDTO saved = dto;
 
+        if (type.equals("deleted")) {           // 댓글 삭제
+            projectService.delete("comment", dto.getId());
+        } else if (type.equals("added")) {      // 댓글 생성
+            saved = projectService.addComment(dto);
+        } else {
+            throw new IllegalArgumentException("Unsupported comment type: " + type);
+        }
+
+        projectService.sendBoardUpdate(projectId, "COMMENT_" + type.toUpperCase(), saved);
+    }
 
 
 }

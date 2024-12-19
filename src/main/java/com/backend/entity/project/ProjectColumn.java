@@ -47,12 +47,11 @@ public class ProjectColumn {
     }
 
     public void addTask (ProjectTask task) {
-        try {
             if(tasks==null) {tasks = new ArrayList<>();}
+
+            if(!tasks.contains(task)) {
+                tasks.add(task);}
             tasks.add(task);
             task.setColumn(this);
-        } catch (UnsupportedOperationException e) {
-            System.out.println("tasks 리스트는 Immutable입니다.");
-        }
     }
 }

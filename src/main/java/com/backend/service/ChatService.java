@@ -134,6 +134,9 @@ public class ChatService {
         }
     }
 
+    public ChatMemberDocument getChatMember(String uid) {
+        return chatMemberRepository.findByUid(uid);
+    }
 
     public ChatRoomDTO getChatRoomInfo(String chatRoomId) {
         if (chatRoomRepository.findById(chatRoomId).isPresent()) {
@@ -166,12 +169,64 @@ public class ChatService {
         return membersList;
     }
 
+    @Transactional
     public ChatRoomDocument updateChatMembers(String chatRoomId, List<String> members) {
         Optional<ChatRoomDocument> chatRoomOpt = chatRoomRepository.findById(chatRoomId);
         if (chatRoomOpt.isPresent()) {
             ChatRoomDocument chatRoomDocument = chatRoomOpt.get();
             chatRoomDocument.getMembers().addAll(members);
             ChatRoomDocument savedDocument = chatRoomRepository.save(chatRoomDocument);
+
+            // 채팅방 입장 알림 메시지를 위한 username 리스트
+            List<String> userNames = new ArrayList<>();
+
+            for (String uid : members) {
+                ChatMemberDocument memberDocument = chatMemberRepository.findByUid(uid);
+                memberDocument.getRoomIds().add(savedDocument.getId());
+                chatMemberRepository.save(memberDocument);
+
+                ChatMapperDocument chatMapperDocument = ChatMapperDocument.builder()
+                        .userId(uid)
+                        .chatRoomId(savedDocument.getId())
+                        .joinedAt(LocalDateTime.now())
+                        .build();
+                chatMapperRepository.save(chatMapperDocument);
+
+                userNames.add(memberDocument.getName());
+            }
+
+            // 시스템 알림 메시지 생성
+            ChatMessageDocument message = ChatMessageDocument.builder()
+                        .roomId(savedDocument.getId())
+                        .sender("System")
+                        .content(userNames + "님이 채팅방에 입장하였습니다.")
+                        .type("JOIN")
+                        .build();
+            ChatMessageDocument savedMessage = chatMessageRepository.save(message);
+
+            // 실시간 알림 전송
+            messagingTemplate.convertAndSend("/topic/chat/" + savedDocument.getId(), message);
+
+            List<String> allMembers = savedDocument.getMembers();
+            allMembers.add(savedDocument.getLeader());
+
+            for (String member : allMembers) {
+
+                long count = getUnreadMessageCount(member, savedDocument.getId()).getCount();
+
+                NotificationResponse unreadCount = NotificationResponse.builder()
+                            .type("unreadCount")
+                            .chatRoomId(savedMessage.getRoomId())
+                            .unreadCount((int) count)
+                            .build();
+                NotificationResponse lastMessage = NotificationResponse.builder()
+                            .type("lastMessage")
+                            .chatRoomId(savedMessage.getRoomId())
+                            .lastMessage(savedMessage.getContent())
+                            .build();
+                messagingTemplate.convertAndSend("/topic/notifications/" + member, unreadCount);
+                messagingTemplate.convertAndSend("/topic/notifications/" + member, lastMessage);
+            }
             return savedDocument;
         }
         return null;
@@ -278,6 +333,7 @@ public class ChatService {
                         chatRoomRepository.save(chatRoomDocument);
                     } else {
                         chatRoomRepository.delete(chatRoomDocument);
+                        chatMessageRepository.deleteAllByRoomId(roomId);
                     }
                 }
             } else if (isLeader) {
@@ -294,6 +350,7 @@ public class ChatService {
                     // 리더가 나가면서 다른 멤버가 없는 경우, 방 삭제
                     log.info("리더가 나가면서 다른 멤버가 없는 경우: uid={}", uid);
                     chatRoomRepository.delete(chatRoomDocument);
+                    chatMessageRepository.deleteAllByRoomId(roomId);
                 }
             } else {
                 log.error("사용자가 채팅방의 멤버나 리더가 아닙니다: uid={}", uid);
@@ -303,41 +360,49 @@ public class ChatService {
             // 채팅맵퍼 삭제
             chatMapperRepository.deleteByUserIdAndChatRoomId(uid, roomId);
 
-            // 사용자 정보 조회
-            ChatMemberDocument optionalChatMember = chatMemberRepository.findByUid(uid);
-            String userName = optionalChatMember.getName();
 
-            // 시스템 알림 메시지 생성
-            ChatMessageDocument message = ChatMessageDocument.builder()
-                    .roomId(roomId)
-                    .sender("System")
-                    .content(userName + "님이 채팅방을 나갔습니다.")
-                    .type("LEAVE")
-                    .build();
-            ChatMessageDocument savedMessage = chatMessageRepository.save(message);
 
-            // 실시간 알림 전송
-            messagingTemplate.convertAndSend("/topic/chat/" + roomId, message);
+            // 사용자 정보 조회 및 사용자 정보에서 해당 채팅방 ID 삭제
+            ChatMemberDocument chatMemberDocument = chatMemberRepository.findByUid(uid);
+            String userName = chatMemberDocument.getName();
 
-            members.add(leader);
-            members.remove(uid);
+            chatMemberDocument.getRoomIds().remove(roomId);
+            chatMemberRepository.save(chatMemberDocument);
 
-            for (String member : members) {
+            if (chatRoomRepository.findById(roomId).isPresent()) {
 
-                long count = getUnreadMessageCount(member, roomId).getCount();
-
-                NotificationResponse unreadCount = NotificationResponse.builder()
-                        .type("unreadCount")
-                        .chatRoomId(savedMessage.getRoomId())
-                        .unreadCount((int) count)
+                // 시스템 알림 메시지 생성
+                ChatMessageDocument message = ChatMessageDocument.builder()
+                        .roomId(roomId)
+                        .sender("System")
+                        .content(userName + "님이 채팅방을 나갔습니다.")
+                        .type("LEAVE")
                         .build();
-                NotificationResponse lastMessage = NotificationResponse.builder()
-                        .type("lastMessage")
-                        .chatRoomId(savedMessage.getRoomId())
-                        .lastMessage(savedMessage.getContent())
-                        .build();
-                messagingTemplate.convertAndSend("/topic/notifications/" + member, unreadCount);
-                messagingTemplate.convertAndSend("/topic/notifications/" + member, lastMessage);
+                ChatMessageDocument savedMessage = chatMessageRepository.save(message);
+
+                // 실시간 알림 전송
+                messagingTemplate.convertAndSend("/topic/chat/" + roomId, message);
+
+                members.add(leader);
+                members.remove(uid);
+
+                for (String member : members) {
+
+                    long count = getUnreadMessageCount(member, roomId).getCount();
+
+                    NotificationResponse unreadCount = NotificationResponse.builder()
+                            .type("unreadCount")
+                            .chatRoomId(savedMessage.getRoomId())
+                            .unreadCount((int) count)
+                            .build();
+                    NotificationResponse lastMessage = NotificationResponse.builder()
+                            .type("lastMessage")
+                            .chatRoomId(savedMessage.getRoomId())
+                            .lastMessage(savedMessage.getContent())
+                            .build();
+                    messagingTemplate.convertAndSend("/topic/notifications/" + member, unreadCount);
+                    messagingTemplate.convertAndSend("/topic/notifications/" + member, lastMessage);
+                }
             }
             return "success";
         } catch (Exception e) {
@@ -348,18 +413,18 @@ public class ChatService {
 
     public ChatMessageDocument saveMessage(ChatMessageDTO chatMessageDTO) {
         log.info("chatMessageDTO: {}", chatMessageDTO);
+        String userName = chatMemberRepository.findByUid(chatMessageDTO.getSender()).getName();
         ChatMessageDocument chatMessageDocument = chatMessageDTO.toDocument();
-        if (chatMessageDocument != null) {
-            ChatMessageDocument savedDocument = chatMessageRepository.save(chatMessageDocument);
-            Optional<ChatMapperDocument> chatMapperOpt = chatMapperRepository.findByUserIdAndChatRoomId(savedDocument.getSender(), savedDocument.getRoomId());
-            if (chatMapperOpt.isPresent()) {
-                ChatMapperDocument chatMapperDocument = chatMapperOpt.get();
-                chatMapperDocument.setLastReadTimeStamp(savedDocument.getTimeStamp());
-                chatMapperRepository.save(chatMapperDocument);
-            }
-            return savedDocument;
+        chatMessageDocument.setSenderName(userName);
+
+        ChatMessageDocument savedDocument = chatMessageRepository.save(chatMessageDocument);
+        Optional<ChatMapperDocument> chatMapperOpt = chatMapperRepository.findByUserIdAndChatRoomId(savedDocument.getSender(), savedDocument.getRoomId());
+        if (chatMapperOpt.isPresent()) {
+            ChatMapperDocument chatMapperDocument = chatMapperOpt.get();
+            chatMapperDocument.setLastReadTimeStamp(savedDocument.getTimeStamp());
+            chatMapperRepository.save(chatMapperDocument);
         }
-        return null;
+        return savedDocument;
     }
 
     // 특정 채팅방의 마지막으로 읽은 메시지부터 로드

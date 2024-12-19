@@ -3,6 +3,7 @@ package com.backend.entity.project;
 import com.backend.dto.response.project.GetProjectAssignDTO;
 import com.backend.dto.response.project.GetProjectCoworkerDTO;
 import com.backend.dto.response.project.GetProjectListDTO;
+import com.backend.dto.response.project.GetProjectTaskDTO;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -20,18 +21,19 @@ public class ProjectAssign {
     private Long id;
 
     @Setter
+    @ToString.Exclude
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumn(name = "project_task")
     private ProjectTask task;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "coworker_id")
     private ProjectCoworker user;
 
     public GetProjectAssignDTO toDTO() {
         return GetProjectAssignDTO.builder()
                 .id(id)
-                .task(task.toGetProjectTaskDTO())
+                .task(GetProjectTaskDTO.builder().id(task.getId()).build())
                 .user(user.toGetCoworkerDTO())
                 .build();
     }

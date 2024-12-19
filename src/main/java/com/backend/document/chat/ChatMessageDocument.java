@@ -26,6 +26,7 @@ public class ChatMessageDocument {
     private String content; // 내용
     private String fileUrl; // 파일 Url
     private String sender; // 보낸 사람 아이디
+    private String senderName; // 보낸 사람 이름
     @CreationTimestamp
     @Builder.Default
     private LocalDateTime timeStamp = LocalDateTime.now(); // 보낸 시간
@@ -39,6 +40,7 @@ public class ChatMessageDocument {
                 .content(this.content)
                 .fileUrl(this.fileUrl)
                 .sender(this.sender)
+                .senderName(this.senderName)
                 .timeStamp(this.timeStamp)
                 .build();
     }
