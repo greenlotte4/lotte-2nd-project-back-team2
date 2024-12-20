@@ -1,9 +1,12 @@
 package com.backend.controller;
 
 import com.backend.dto.community.BoardDTO;
+import com.backend.dto.community.PostDTO;
 import com.backend.entity.community.Board;
+import com.backend.entity.community.Post;
 import com.backend.repository.community.BoardRepository;
 import com.backend.service.BoardService;
+import com.backend.service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +16,11 @@ import java.util.List;
 @RequestMapping("/api/community")
 public class BoardController {
     private final BoardService boardService;
+    private final PostService postService;
 
-    public BoardController(BoardService boardService) {
+    public BoardController(BoardService boardService, PostService postService) {
         this.boardService = boardService;
+        this.postService = postService;
     }
 
     // 전체 게시판 조회
@@ -44,6 +49,16 @@ public class BoardController {
     public ResponseEntity<Board> createBoard(@RequestBody Board board) {
         Board newBoard = boardService.createBoard(board);
         return ResponseEntity.ok(newBoard);
+    }
+
+    @GetMapping("/board/notice")
+    public ResponseEntity<?> getNotice(){
+        List<PostDTO> posts = postService.getNotice(Long.valueOf(1));
+        if(posts.size() > 0){
+            return ResponseEntity.ok().body(posts);
+        }else{
+            return ResponseEntity.noContent().build();
+        }
     }
 
 }

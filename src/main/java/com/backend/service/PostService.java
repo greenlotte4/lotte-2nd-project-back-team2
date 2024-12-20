@@ -230,6 +230,29 @@ public class PostService {
         postRepository.delete(post);
     }
 
+    // 게시판 ID로 게시글 목록 조회(페이징처리)
+    public List<PostDTO> getNotice(Long boardId) {
+        List<Post> postsPage = postRepository.findTop4ByBoard_BoardIdOrderByCreatedAtDesc(boardId);
+
+        // Post 엔티티를 PostDTO로 변환
+        return postsPage.stream()
+                .map(post -> {
+                    User userEntity = post.getUser();
+                    log.info("Post ID: " + post.getPostId());
+                    log.info("User Entity: " + (userEntity != null ? userEntity.getName() : "User is null"));
+
+                    return PostDTO.builder()
+                            .postId(post.getPostId())
+                            .boardId(post.getBoard().getBoardId())
+                            .title(post.getTitle())
+                            .content(post.getContent())
+                            .writer(userEntity != null ? userEntity.getName() : "Unknown") // User에서 이름 가져오기
+                            .createdAt(post.getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
 }
 
 
