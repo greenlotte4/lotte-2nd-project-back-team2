@@ -54,6 +54,8 @@ public class AuthController {
         Optional<User> user = userRepository.findByUid(dto.getUid());
         if(user.isEmpty()){
             return ResponseEntity.notFound().build();
+        }else if(user.get().getStatus()==0){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         if(passwordEncoder.matches(dto.getPwd(), user.get().getPwd())){
@@ -70,15 +72,6 @@ public class AuthController {
             cookie.setPath("/");
             cookie.setMaxAge(60*60*24*7);
             resp.addCookie(cookie);
-
-            //쿠키에 저장해라
-            Cookie acookie = new Cookie("jwt_token", accessToken);
-            acookie.setPath("/");
-            acookie.setMaxAge(60*60*24*7);
-            acookie.setSecure(false);
-            acookie.setAttribute("SameSite", "Lax");  // HTTP에서는 'Lax'를 사용
-            acookie.setHttpOnly(false);       // JavaScript에서 접근할 수 있게 설정
-            resp.addCookie(acookie);
 
             long groupId = userService.findGroupByUserUid(userDto.getUid());
             UserDto userDto1 = user.get().toSliceDto();

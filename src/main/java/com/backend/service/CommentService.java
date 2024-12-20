@@ -35,6 +35,8 @@ public class CommentService {
         dto.setPostId(comment.getPost().getPostId());
         dto.setContent(comment.getContent());
         dto.setWriter(comment.getUser().getName());
+        dto.setUid(comment.getUser().getUid()); // **User 엔티티에서 uid 가져오기**
+
         dto.setCreatedAt(comment.getCreatedAt());
         dto.setParentId(comment.getParent() != null ? comment.getParent().getCommentId() : null);
         dto.setMentionUsername(comment.getMentionUser() != null ? comment.getMentionUser().getName() : null);

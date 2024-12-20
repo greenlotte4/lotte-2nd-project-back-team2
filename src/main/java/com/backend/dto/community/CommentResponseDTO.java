@@ -41,6 +41,8 @@ public class CommentResponseDTO {
 
     private boolean isLiked;
 
+    private String uid; // **uid 필드 추가**
+
 
     // Comment 객체를 기반으로 하는 생성자
     public CommentResponseDTO(Comment comment, boolean isLiked) {
