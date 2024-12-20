@@ -48,9 +48,7 @@ public class ProjectController {
     @GetMapping("/project/{projectId}/column") // 프로젝트 페이지 출력
     public ResponseEntity<?> getColumn(@PathVariable Long projectId) {
         List<GetProjectColumnDTO> columnList = projectService.getColumns(projectId);
-        Map<String,Object> result = new HashMap<>();
-        result.put("columns", columnList);
-        return ResponseEntity.ok().body(result);
+        return ResponseEntity.ok().body(columnList);
     }
 
     @DeleteMapping("/project/{id}")
@@ -89,15 +87,12 @@ public class ProjectController {
                            @Payload GetProjectTaskDTO dto) {
         GetProjectTaskDTO saved = dto;
 
-        if(type.equals("added")){               // 서브태스크 생성
+        if(type.equals("added")){               // 태스크 생성
             saved = projectService.addTask(dto);
-        } else if (type.equals("updated")) {    //서브태스크 수정
+        } else if (type.equals("updated")) {    // 태스크 수정
             saved = projectService.updateTask(dto);
-        } else{                                 // 서브태스크 삭제
+        } else{                                 // 태스크 삭제
             projectService.delete("task", dto.getId());
-        }
-        if (type.equals("deleted")) {       // 태스크 삭제
-        } else {                            // 태스크 생성, 수정
         }
 
         projectService.sendBoardUpdate(projectId, "TASK_"+type.toUpperCase(), saved);

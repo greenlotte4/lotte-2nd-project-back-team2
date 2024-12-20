@@ -128,7 +128,7 @@ public class GroupController {
     ) {
         Map<String, Object> map = new HashMap<>();
         Page<GetGroupsAllDto> dtos;
-        String company = (String) request.getAttribute("company");
+        String company = (String) request.getAttribute("company") == null ? "": (String) request.getAttribute("company") ;
         if(!keyword.equals("")&&id==0){
             dtos = groupService.getGroupsAllByKeyword(page,keyword,company);
         } else {

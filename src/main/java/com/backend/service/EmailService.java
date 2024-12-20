@@ -111,25 +111,57 @@ public class EmailService {
 
     // 자동 응답 이메일 보내기
     public void sendAutoReplyEmail(String userEmail) {
-        String subject = "문의 접수 확인";
-        String content = "<p>귀하의 문의가 접수되었습니다. 빠른 시일 내에 답변 드리겠습니다.</p>";
-
-        // SimpleMailMessage를 사용하여 간단한 이메일 전송
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail);
-        message.setTo(userEmail);
-        message.setSubject(subject);
-        message.setText(content);
-
         try {
-            emailSender.send(message);
-            logger.info("자동 응답 이메일 전송 성공");
-        } catch (Exception e) {
+            String subject = "[자동 응답] 문의가 접수되었습니다";
+            String content = String.format("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #666bff; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 20px; }
+                    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>문의가 접수되었습니다</h2>
+                    </div>
+                    <div class="content">
+                        <p>안녕하세요,</p>
+                        <p>귀하의 문의가 성공적으로 접수되었습니다.</p>
+                        <p>접수 시간: %s</p>
+                        <p>담당자가 확인 후 1-2일 이내에 답변 드리도록 하겠습니다.</p>
+                        <p>추가 문의사항이 있으시다면 언제든 문의해 주시기 바랍니다.</p>
+                        <br>
+                        <p>감사합니다.</p>
+                    </div>
+                    <div class="footer">
+                        <p>본 메일은 자동 발송되는 메일입니다.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """,
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+            );
+             MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+             helper.setFrom(fromEmail);
+            helper.setTo(userEmail);
+            helper.setSubject(subject);
+            helper.setText(content, true);
+             emailSender.send(message);
+            logger.info("자동 응답 이메일 전송 성공: {}", userEmail);
+         } catch (Exception e) {
             logger.error("자동 응답 이메일 전송 실패: {}", e.getMessage());
-            e.printStackTrace();  // 예외 처리
+            logger.error("상세 에러: ", e);
         }
     }
-
     // 취소/반품 이메일 전송 메서드
     public void sendCancellationEmail(CancellationRequestDto request) {
         try {
