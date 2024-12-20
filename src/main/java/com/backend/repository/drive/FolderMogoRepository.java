@@ -18,13 +18,14 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
     Optional<Folder> findByParentId(String parentId);
     Folder findByName(String name);
 
-    Folder findByTypeAndOwnerId(String type, String ownerId);
+
+    Optional<Folder> findByTypeAndOwnerId(String type, String ownerId);
 
     List<Folder> findByOwnerIdAndParentIdAndStatusIsNot(String ownerId, String parentId, int status);
     List<Folder> findByOwnerIdAndIsPinnedAndStatus(String uid, int isPinned, int status);
     List<Folder> findByOwnerIdAndParentIdIsNotNullAndStatusIsNotOrderByUpdatedAtDesc(String uid, int status);
 
-    List<Folder> findByOwnerIdAndStatus(String uid, int status);
+    List<Folder> findByOwnerIdAndTargetAndStatus(String uid, int target,int status);
 
     List<Folder> findAllByParentId(String parentId);
 

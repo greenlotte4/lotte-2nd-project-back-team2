@@ -376,12 +376,18 @@ public class DriveController {
     //폴더 삭제(status 변경만)
     @DeleteMapping("/{type}/delete/{Id}")
     public ResponseEntity deleteFolder(@PathVariable String Id,@PathVariable String type ,@RequestParam String path
-            ,@RequestParam String parentId
+            ,@RequestParam(required = false) String parentId
             ,HttpServletRequest request){
         Map<String ,String > result = new HashMap<>();
         log.info("Delete folder:"+Id+" path : "+path);
         String currentUser = (String) request.getAttribute("uid");
-        FolderDto parentFolder = folderService.getParentFolder(parentId);
+        FolderDto parentFolder = null;
+        if(parentId == null || parentId.isEmpty()){
+            parentFolder =folderService.getRootFolder(currentUser);
+        }else{
+            parentFolder = folderService.getParentFolder(parentId);
+        }
+
         //owner == uid일치시
         if(parentFolder.getOwnerId().equals(currentUser)){
             result =  folderService.goToTrash(Id,type,currentUser,"모든");

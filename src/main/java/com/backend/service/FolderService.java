@@ -84,6 +84,7 @@ public class FolderService {
                    .sharedUser("[]")
                    .isShared(request.getIsShared())
                    .linkSharing(request.getLinkSharing())
+                   .createdAt(LocalDateTime.now())
                    .updatedAt(LocalDateTime.now())
                    .sharedDepts(request.getShareDepts())
                    .sharedUsers(request.getSharedUsers())
@@ -174,7 +175,8 @@ public class FolderService {
 
 
     public Folder getFolderName(String type,String uid){
-        return folderMogoRepository.findByTypeAndOwnerId(type,uid);
+        return folderMogoRepository.findByTypeAndOwnerId(type,uid).orElseThrow(() -> new IllegalArgumentException("Folder not found DRIVE with uid: " + uid));
+
     }
     public Folder existFolder(String name,String parentId){
         return folderMogoRepository.findFolderByNameAndParentIdAndStatusIsNot(name,parentId,0);
@@ -199,6 +201,16 @@ public class FolderService {
 
     public FolderDto getParentFolder(String folderId){
         Optional<Folder> opt = folderMogoRepository.findById(folderId);
+        if(opt.isPresent()){
+            Folder folder = opt.get();
+            FolderDto folderDto = folder.toDTO();
+            return folderDto;
+        }
+        return null;
+    }
+
+    public FolderDto getRootFolder(String uid){
+        Optional<Folder> opt = folderMogoRepository.findByTypeAndOwnerId("ROOT",uid);
         if(opt.isPresent()){
             Folder folder = opt.get();
             FolderDto folderDto = folder.toDTO();
@@ -381,10 +393,12 @@ public class FolderService {
                 if(folder.getOwnerId().equals(currentUser) || permission.equals("모든")){
                     Query query = new Query(Criteria.where("_id").is(id));
                     Update update = new Update()
-                            .set("status", 0);
+                            .set("status", 0).set("target",1).set("updateAt", LocalDateTime.now());
                     mongoTemplate.upsert(query, update, Folder.class);
-                     result.put("result","success");
+                    updateAllChildren(id);
+                    result.put("result","success");
                      result.put("message","휴지통 이동 성공");
+
 
                 }else{
                     result.put("result","fail");
@@ -412,6 +426,28 @@ public class FolderService {
 
 
     }
+
+    public void updateAllChildren(String parentId) {
+        // 현재 폴더의 하위 폴더들을 조회
+        Query folderQuery = new Query(Criteria.where("parentId").is(parentId));
+        Update update = new Update().set("status", 0);
+
+        // 하위 폴더 업데이트
+        mongoTemplate.updateMulti(folderQuery, update, Folder.class);
+
+        // 하위 파일 업데이트
+        Query fileQuery = new Query(Criteria.where("parentId").is(parentId));
+        mongoTemplate.updateMulti(fileQuery, update, FileMogo.class);
+
+        // 하위 폴더들의 ID 가져오기
+        List<Folder> childFolders = mongoTemplate.find(folderQuery, Folder.class);
+
+        // 각 하위 폴더에 대해 재귀적으로 처리
+        for (Folder childFolder : childFolders) {
+            updateAllChildren(childFolder.getId());
+        }
+    }
+
 
 
     //zip파일 생성
@@ -506,7 +542,7 @@ public class FolderService {
 
     //휴지통
     public List<FolderDto> trashFolder(String uid){
-        List<Folder> folders = folderMogoRepository.findByOwnerIdAndStatus(uid,0);
+        List<Folder> folders = folderMogoRepository.findByOwnerIdAndTargetAndStatus(uid,1,0);
 
         List<FolderDto> folderDtos = folders.stream().map(Folder::toDTO).collect(Collectors.toList());
 
@@ -535,6 +571,9 @@ public class FolderService {
                 Query query = new Query(Criteria.where("_id").is(id));
                 Update update = new Update().set("status", 1).set("updatedAt", new Date());
                 updateResult =  mongoTemplate.upsert(query, update, Folder.class);
+                updateRestoreAllChildren(id);
+
+
             }else if(type.equals("file")){
                 FileMogo file = fileMogoRepository.findById(id)
                         .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + id));
@@ -557,6 +596,27 @@ public class FolderService {
             return false;
         }
 
+    }
+
+    public void updateRestoreAllChildren(String parentId) {
+        // 현재 폴더의 하위 폴더들을 조회
+        Query folderQuery = new Query(Criteria.where("parentId").is(parentId));
+        Update update = new Update().set("status", 1);
+
+        // 하위 폴더 업데이트
+        mongoTemplate.updateMulti(folderQuery, update, Folder.class);
+
+        // 하위 파일 업데이트
+        Query fileQuery = new Query(Criteria.where("parentId").is(parentId));
+        mongoTemplate.updateMulti(fileQuery, update, FileMogo.class);
+
+        // 하위 폴더들의 ID 가져오기
+        List<Folder> childFolders = mongoTemplate.find(folderQuery, Folder.class);
+
+        // 각 하위 폴더에 대해 재귀적으로 처리
+        for (Folder childFolder : childFolders) {
+            updateAllChildren(childFolder.getId());
+        }
     }
 
 
