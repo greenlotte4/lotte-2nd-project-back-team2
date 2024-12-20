@@ -59,7 +59,7 @@ public class MainController {
 
         RespHeaderUserDTO header = RespHeaderUserDTO.builder()
                 .name(user.getName())
-                .profileImgPath(user.getProfileImgPath())
+                .profileImgPath(user.getProfileImgPath() != null ? user.getProfileImgPath() : "Default.png")
                 .build();
         return ResponseEntity.ok(header);
     }

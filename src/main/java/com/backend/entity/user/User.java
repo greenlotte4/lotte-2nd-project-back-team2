@@ -226,7 +226,7 @@ public class User {
                 .paymentId(this.paymentId)
                 .day(this.day)
 //                .groupMappers(this.groupMappers)
-                .profileImgPath(this.profileImgPath != null ? this.profileImgPath : "uploads/profilImg/Default.png") // 기본값 설정
+                .profileImgPath(this.profileImgPath != null ? this.profileImgPath : "Default.png") // 기본값 설정
                 .profileMessage(this.profileMessage)
                 .createAt(this.createAt)
                 .lastLogin(this.lastLogin)
