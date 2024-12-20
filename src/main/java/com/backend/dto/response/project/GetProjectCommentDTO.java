@@ -1,9 +1,8 @@
 package com.backend.dto.response.project;
 
+import com.backend.dto.response.UserDto;
 import com.backend.entity.project.ProjectComment;
-import com.backend.entity.project.ProjectTask;
 import com.backend.entity.user.User;
-import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -21,7 +20,9 @@ public class GetProjectCommentDTO {
     @ToString.Exclude
     private GetProjectTaskDTO task;
 
-    private User user;
+    @ToString.Exclude
+    private UserDto user;
+    private String writer;
 
     private String content;
 
@@ -36,7 +37,7 @@ public class GetProjectCommentDTO {
                 .id(id)
                 .content(content)
                 .rdate(rdate)
-                .user_id(user_id)
+                .user(User.builder().id(user.getId()).uid(user.getUid()).name(user.getName()).profileImgPath(user.getProfileImgPath()).build())
                 .build();
     }
 }

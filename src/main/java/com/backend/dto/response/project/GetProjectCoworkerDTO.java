@@ -19,6 +19,7 @@ public class GetProjectCoworkerDTO {
     private String email;
     private String group;
     private String level;
+    private String profileImgPath; // 프로필 이미지의 sName (파일명)
 
     private boolean isOwner;
 
@@ -35,26 +36,13 @@ public class GetProjectCoworkerDTO {
     public ProjectCoworker toProjectCoworker() {
         return ProjectCoworker.builder()
                 .id(id)
-                .user(User.builder().uid(uid).name(name).email(email).build())
+                .user(User.builder().uid(uid).name(name).email(email).profileImgPath(profileImgPath).build())
                 .isOwner(isOwner)
                 .canRead(canRead)
                 .canAddTask(canAddTask)
                 .canUpdateTask(canUpdateTask)
                 .canDeleteTask(canDeleteTask)
                 .canEditProject(canEditProject)
-                .build();
-    }
-
-    public ProjectCoworker toProjectCoworkerForAsso() {
-        return ProjectCoworker.builder()
-                .user(User.builder().id(id).uid(uid).name(name).email(email).build())
-                .isOwner(isOwner)
-                .canRead(canRead)
-                .canAddTask(canAddTask)
-                .canUpdateTask(canUpdateTask)
-                .canDeleteTask(canDeleteTask)
-                .canEditProject(canEditProject)
-                .project(Project.builder().id(projectId).build())
                 .build();
     }
 

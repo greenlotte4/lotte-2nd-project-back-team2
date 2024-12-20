@@ -11,6 +11,7 @@ import com.backend.entity.community.Board;
 import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,17 +37,19 @@ public class PostDTO {
 
     private String regip;
 
-    private boolean favoritePost; //즐겨찾기
+    private boolean favoritePost;
 
-    private boolean isMandatory; // 필독 여부
+    private MultipartFile file;
 
-    private Long boardId; // 게시글이 속한 게시판
+    private boolean isMandatory;
 
-    private String uid; // 작성자 정보
+    private Long boardId;
+
+    private String uid;
 
     private String boardName;
 
-    private LocalDateTime createdAt; // 생성 날짜
+    private LocalDateTime createdAt;
 
     public void setBoardName(String boardName) {
     }

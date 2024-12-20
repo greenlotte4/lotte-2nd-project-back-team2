@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 특정 게시판의 게시글 조회
-    Page<Post> findByBoard_BoardIdOrderByCreatedAtAsc(Long boardId, Pageable pageable);
+    Page<Post> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
 
     // 특정 작성자의 게시글 조회
     Optional<Post> findByBoard_BoardIdAndPostId(Long boardId, Long postId);

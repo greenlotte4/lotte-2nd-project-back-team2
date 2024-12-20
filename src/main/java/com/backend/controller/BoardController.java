@@ -45,4 +45,5 @@ public class BoardController {
         Board newBoard = boardService.createBoard(board);
         return ResponseEntity.ok(newBoard);
     }
+
 }

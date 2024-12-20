@@ -10,6 +10,9 @@ import com.backend.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -56,6 +59,13 @@ public class Post extends BaseTimeEntity{
     @JoinColumn(name = "user_id", nullable = false) // 외래 키
     private User user; // 작성자 정보
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
 
+    @Column(name = "file_name")
+    private String fileName; // 파일 이름
+
+    @Column(name = "file_path")
+    private String filePath; // 파일 저장 경로
 
 }

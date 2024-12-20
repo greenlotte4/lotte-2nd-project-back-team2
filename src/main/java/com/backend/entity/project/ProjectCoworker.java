@@ -77,6 +77,7 @@ public class ProjectCoworker { //프로젝트별 멤버 권한
                 .uid(user.getUid())
                 .name(user.getName())
                 .email(user.getEmail())
+                .profileImgPath(user.getProfileImgPath())
                 .group(group)
                 .level(user.getLevel()!=null?user.selectLevelString():null)
                 .canRead(canRead)

@@ -195,8 +195,7 @@ public class ProjectService {
         return col.toGetProjectColumnDTO();
     }
 
-    @Transactional
-    public GetProjectTaskDTO saveTask(GetProjectTaskDTO taskDTO) {
+    public GetProjectTaskDTO addTask(GetProjectTaskDTO taskDTO) {
         log.info("saveTask 0 : " + taskDTO);
         ProjectTask task = taskDTO.toProjectTask();
         log.info("saveTask 1 : " + task);
@@ -210,6 +209,18 @@ public class ProjectService {
         log.info("saveTask 2 : " + task);
         log.info("saveTask 3 : " + col);
         return task.toGetProjectTaskDTO();
+    }
+
+    public GetProjectTaskDTO updateTask(GetProjectTaskDTO taskDTO) {
+        ProjectTask task = taskDTO.toProjectTask();
+        ProjectTask originTask = taskRepository.findById(task.getId()).orElseThrow();
+        // 기존 Assign 데이터 삭제
+        assignRepository.deleteByTaskId(originTask.getId());
+
+        // Task 정보 업데이트
+        originTask.update(task);
+
+        return originTask.toGetProjectTaskDTO();
     }
 
     public void updateCoworkers(PatchCoworkersDTO dto) {
@@ -297,7 +308,7 @@ public class ProjectService {
         log.info("addComment 0 : " + task);
         ProjectComment comment = ProjectComment.builder()
                 .task(task)
-                .user(dto.getUser())
+                .user(dto.toEntity().getUser())
                 .content(dto.getContent())
                 .build();
         log.info("addComment 1 : " + comment);

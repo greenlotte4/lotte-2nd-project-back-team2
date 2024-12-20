@@ -8,6 +8,7 @@ import com.backend.entity.group.GroupMapper;
 import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
 import com.backend.repository.community.BoardRepository;
+import com.backend.repository.community.CommentRepository;
 import com.backend.repository.community.PostRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.server.UID;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +41,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final BoardRepository boardRepository;
+    private final CommentRepository commentRepository;
 
     public ResponseEntity<?> createPost(PostDTO post) {
         Optional<Board> board = boardRepository.findById(post.getBoardId());
@@ -102,16 +107,19 @@ public class PostService {
     }
 
 
-    //    // 게시판 ID로 게시글 목록 조회(페이징처리)
+        // 게시판 ID로 게시글 목록 조회(페이징처리)
     public List<PostDTO> getPostsByBoardId(Long boardId, Pageable pageable) {
-        Page<Post> postsPage = postRepository.findByBoard_BoardIdOrderByCreatedAtAsc(boardId, pageable);
+        Page<Post> postsPage = postRepository.findByBoard_BoardIdOrderByCreatedAtDesc(boardId, pageable);
 
         int currentPage = postsPage.getNumber();  // 현재 페이지 번호
 
         // Post 엔티티를 PostDTO로 변환
         return postsPage.stream()
                 .map(post -> {
-                    User userEntity = post.getUser(); // 작성자 정보 가져오기
+                    User userEntity = post.getUser();
+                    log.info("Post ID: " + post.getPostId());
+                    log.info("User Entity: " + (userEntity != null ? userEntity.getName() : "User is null"));
+
                     return PostDTO.builder()
                             .postId(post.getPostId())
                             .boardId(post.getBoard().getBoardId())
@@ -130,21 +138,18 @@ public class PostService {
             Optional<Post> postOpt = postRepository.findByBoard_BoardIdAndPostId(boardId, postId);
             if (postOpt.isPresent()) {
                 Post post = postOpt.get();
-                PostDTO postDTO = new PostDTO();
-                postDTO.setPostId(post.getPostId());
-                postDTO.setTitle(post.getTitle());
-                postDTO.setContent(post.getContent());
-                postDTO.setUid(post.getUser().getUid());
-                postDTO.setRegip(post.getRegip());
-                postDTO.setCreatedAt(post.getCreatedAt());
 
-                Board board = post.getBoard();  // Board 객체 가져오기
-                if (board != null) {
-                    postDTO.setBoardId(board.getBoardId());
-                    postDTO.setBoardName(board.getBoardName()); // Board 객체가 null이 아니면 boardName 설정
-                } else {
-                    log.error("Board 객체가 null입니다.");
-                }
+                PostDTO postDTO = PostDTO.builder()
+                        .postId(post.getPostId())
+                        .title(post.getTitle())
+                        .content(post.getContent())
+                        .writer(post.getWriter()) // Post 엔티티의 writer 필드에서 가져오기
+                        .uid(post.getUser() != null ? post.getUser().getUid() : null)
+                        .regip(post.getRegip())
+                        .boardId(post.getBoard().getBoardId())
+                        .boardName(post.getBoard().getBoardName())
+                        .createdAt(post.getCreatedAt())
+                        .build();
 
                 return postDTO;
             } else {
@@ -153,9 +158,10 @@ public class PostService {
             }
         } catch (Exception e) {
             log.error("게시물 조회 중 오류 발생: " + e.getMessage(), e);
-            throw new RuntimeException("게시물 조회 중 오류 발생", e); // 예외를 처리하고 던짐
+            throw new RuntimeException("게시물 조회 중 오류 발생", e);
         }
     }
+
 
     // 부서별 게시판 접근 권한 확인
     public boolean checkBoardAccess(Long boardId, String uid) {
@@ -183,6 +189,47 @@ public class PostService {
         }
         return false;
     }
+
+    @Transactional
+    public void updatePost(Long boardId, Long postId, PostDTO postUpdateDTO) {
+        // 게시글 조회
+        Post post = postRepository.findByBoard_BoardIdAndPostId(boardId, postId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+
+        // 제목과 내용 업데이트
+        post.setTitle(postUpdateDTO.getTitle());
+        post.setContent(postUpdateDTO.getContent());
+
+        // 파일이 존재할 경우 파일 처리
+        MultipartFile file = postUpdateDTO.getFile();
+        if (file != null && !file.isEmpty()) {
+            try {
+                String fileName = file.getOriginalFilename();
+                post.setFileName(fileName);
+                log.info("파일이 업데이트되었습니다: {}", fileName);
+
+                // 실제 파일 저장 로직은 필요에 따라 구현 (예: 파일 시스템, 클라우드 스토리지 등)
+            } catch (Exception e) {
+                log.error("파일 업로드 중 오류 발생:", e);
+                throw new RuntimeException("파일 업로드 실패", e);
+            }
+        }
+
+        // 수정된 게시글 저장
+        postRepository.save(post);
+        log.info("게시글이 수정되었습니다: postId = {}", postId);
+    }
+
+
+    @Transactional
+    public void deletePost(Long boardId, Long postId) {
+        Post post = postRepository.findByBoard_BoardIdAndPostId(boardId, postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+        commentRepository.deleteByPost_PostId(postId);
+
+        postRepository.delete(post);
+    }
+
 }
 
 

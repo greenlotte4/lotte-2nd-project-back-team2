@@ -89,10 +89,15 @@ public class ProjectController {
                            @Payload GetProjectTaskDTO dto) {
         GetProjectTaskDTO saved = dto;
 
-        if (type.equals("deleted")) {       // 태스크 삭제
+        if(type.equals("added")){               // 서브태스크 생성
+            saved = projectService.addTask(dto);
+        } else if (type.equals("updated")) {    //서브태스크 수정
+            saved = projectService.updateTask(dto);
+        } else{                                 // 서브태스크 삭제
             projectService.delete("task", dto.getId());
+        }
+        if (type.equals("deleted")) {       // 태스크 삭제
         } else {                            // 태스크 생성, 수정
-            saved = projectService.saveTask(dto);
         }
 
         projectService.sendBoardUpdate(projectId, "TASK_"+type.toUpperCase(), saved);

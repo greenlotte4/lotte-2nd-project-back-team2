@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.ErrorResponse;
@@ -37,15 +38,7 @@ public class PostController {
     public ResponseEntity<PostDTO> createPost(@RequestBody PostDTO postDTO, HttpServletRequest request) {
         log.info("글쓰기 컨트롤러 ");
         String uid = (String) request.getAttribute("uid");
-        String clientIp = request.getHeader("X-Forwarded-For");
-        if (clientIp == null || clientIp.length() == 0 || "unknown".equalsIgnoreCase(clientIp)) {
-            clientIp = request.getHeader("X-Real-IP");
-        }
-        if (clientIp == null || clientIp.length() == 0 || "unknown".equalsIgnoreCase(clientIp)) {
-            clientIp = request.getRemoteAddr();
-        }
         postDTO.setUid(uid);
-        postDTO.setRegip(clientIp);
         log.info("postDTO: " + postDTO);
         // 게시글 생성
         ResponseEntity result = postService.createPost(postDTO);
@@ -119,6 +112,34 @@ public class PostController {
         }
 
     }
+    @GetMapping("/posts/{boardId}/{postId}")
+    public ResponseEntity<PostDTO> getPostById(@PathVariable Long boardId, @PathVariable Long postId) {
+        PostDTO postDTO = postService.getPostById(boardId, postId);
+        return ResponseEntity.ok(postDTO);
+    }
+
+    @PutMapping("/posts/{boardId}/view/{postId}")
+    public ResponseEntity<String> updatePost(
+            @PathVariable Long boardId,
+            @PathVariable Long postId,
+            @ModelAttribute PostDTO postDTO) {
+        log.info("게시글 수정 요청 - boardId: {}, postId: {}, title: {}", boardId, postId, postDTO.getTitle());
+        postService.updatePost(boardId, postId, postDTO);
+        return ResponseEntity.ok("게시글이 성공적으로 수정되었습니다.");
+
+    }
+
+
+    @DeleteMapping("/posts/{boardId}/view/{postId}")
+    public ResponseEntity<String> deletePost(@PathVariable Long boardId, @PathVariable Long postId) {
+        try {
+            postService.deletePost(boardId, postId);
+            return ResponseEntity.ok("게시글이 삭제되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("게시글 삭제 실패: " + e.getMessage());
+        }
+    }
+
 }
 
 

@@ -26,8 +26,8 @@ public class ProjectComment {
     @JoinColumn(name = "task_id")
     private ProjectTask task;
 
-    private String user_id;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
@@ -39,7 +39,9 @@ public class ProjectComment {
     public GetProjectCommentDTO toDTO() {
         return GetProjectCommentDTO.builder()
                 .id(id)
-                .user_id(user_id)
+                .user(user.toDto())
+                .user_id(user.getUid())
+                .writer(user.getName())
                 .content(content)
                 .rdate(rdate)
                 .build();
