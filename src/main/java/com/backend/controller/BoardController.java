@@ -8,6 +8,7 @@ import com.backend.repository.community.BoardRepository;
 import com.backend.service.BoardService;
 import com.backend.service.PostService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,9 +52,11 @@ public class BoardController {
         return ResponseEntity.ok(newBoard);
     }
 
+    //2024/12/20 박연화 추가
     @GetMapping("/board/notice")
-    public ResponseEntity<?> getNotice(){
-        List<PostDTO> posts = postService.getNotice(Long.valueOf(1));
+    public ResponseEntity<?> getNotice(Authentication auth){
+        Long userId = Long.parseLong(auth.getName());
+        List<PostDTO> posts = postService.getNotice(userId, Long.valueOf(1));
         if(posts.size() > 0){
             return ResponseEntity.ok().body(posts);
         }else{

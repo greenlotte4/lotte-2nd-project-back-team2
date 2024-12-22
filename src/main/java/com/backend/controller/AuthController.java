@@ -66,6 +66,7 @@ public class AuthController {
             String accessToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(),company, "access");
             String refreshToken = tokenProvider.createToken(userDto.getUid(),userDto.getRole().toString(),userDto.getId(),company, "refresh");
 
+            log.info("리프레시 토큰 발급 확인 " +refreshToken);
             //쿠키에 저장해라
             Cookie cookie = new Cookie("refresh_token", refreshToken);
             cookie.setHttpOnly(true);

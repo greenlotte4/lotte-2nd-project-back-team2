@@ -19,5 +19,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findByBoard_BoardIdAndPostId(Long boardId, Long postId);
 
 
-    List<Post> findTop4ByBoard_BoardIdOrderByCreatedAtDesc(Long boardId);
+    List<Post> findTop5ByBoard_BoardIdOrderByCreatedAtDesc(Long boardId);
 }
