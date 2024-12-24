@@ -105,4 +105,5 @@ admin:
 
 openai:
     api:
-        key: ${OPENAI_API_KEY}
+        key: "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"
+#        key: ${OPENAI_API_KEY}

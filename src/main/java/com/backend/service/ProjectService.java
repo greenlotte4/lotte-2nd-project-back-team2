@@ -316,4 +316,44 @@ public class ProjectService {
         log.info("addComment 2 : " + savedComment);
         return savedComment.toDTO();
     }
+
+    public List<ReqHomeProjectDTO> getHomeProject(Long userId) {
+        Map<String,Object> map = new HashMap<>();
+
+        List<ProjectCoworker> allProjects
+                = coworkerRepository.findByUserAndProjectStatusIsNot(
+                        userRepository.findById(userId)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException("작업자를 찾을 수 없습니다.")
+                        ), 0);
+
+        List<ReqHomeProjectDTO> dtos = allProjects.stream().limit(3).map(v -> {
+            List<GetProjectColumnDTO> columnDTOS = v.getProject().getColumns().stream().map(c -> {
+                List<GetProjectTaskDTO> taskDTOS = c.getTasks().stream().map(t -> {
+                                                            return GetProjectTaskDTO.builder()
+                                                                    .title(t.getTitle())
+                                                                    .content(t.getContent())
+                                                                    .priority(t.getPriority())
+                                                                    .status(t.getStatus())
+                                                                    .duedate(t.getDuedate())
+                                                                    .build();
+                                                        }).toList();
+                                                    return GetProjectColumnDTO.builder()
+                                                            .title(c.getTitle())
+                                                            .color(c.getColor())
+                                                            .id(c.getId())
+                                                            .tasks(taskDTOS)
+                                                            .build();
+                                                }).toList();
+
+            return ReqHomeProjectDTO.builder()
+                    .projectId(v.getProject().getId())
+                    .projectName(v.getProject().getTitle())
+                    .getProjectColumn(columnDTOS)
+
+                    .build();
+        }).toList();
+
+        return dtos;
+    }
 }

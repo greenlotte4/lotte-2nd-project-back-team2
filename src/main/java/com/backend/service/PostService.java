@@ -248,6 +248,9 @@ public class PostService {
                             .content(post.getContent())
                             .writer(userEntity != null ? userEntity.getName() : "Unknown") // User에서 이름 가져오기
                             .createdAt(post.getCreatedAt())
+                            .hit(post.getHit())
+                            .comment(post.getCommentCount())
+                            .isMandatory(post.isMandatory())
                             .build();
                 })
                 .collect(Collectors.toList());

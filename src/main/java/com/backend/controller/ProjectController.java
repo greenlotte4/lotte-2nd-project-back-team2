@@ -8,10 +8,12 @@ import com.backend.service.ProjectService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -131,5 +133,14 @@ public class ProjectController {
         projectService.sendBoardUpdate(projectId, "COMMENT_" + type.toUpperCase(), saved);
     }
 
+    @GetMapping("/homeProject")
+    public ResponseEntity<?> homeProject (Authentication auth){
+        Long userId = Long.valueOf(auth.getName());
+        List<ReqHomeProjectDTO> dtos = projectService.getHomeProject(userId);
+        if(dtos.isEmpty()){
+            return ResponseEntity.ok().body("데이터가 없습니다...");
+        }
+        return ResponseEntity.ok().body(dtos);
+    }
 
 }

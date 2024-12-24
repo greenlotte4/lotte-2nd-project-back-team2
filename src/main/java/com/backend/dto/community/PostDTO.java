@@ -51,6 +51,9 @@ public class PostDTO {
 
     private LocalDateTime createdAt;
 
+    private int hit;
+    private int comment;
+
     public void setBoardName(String boardName) {
     }
 }
