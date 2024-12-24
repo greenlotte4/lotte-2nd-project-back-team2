@@ -29,7 +29,7 @@ public class ProjectSubTask { //Task 내부 체크리스트
     public GetProjectSubTaskDTO toDTO(){
         return GetProjectSubTaskDTO.builder()
                 .id(id)
-                .taskId(task.getId())
+                .taskId(task!=null?task.getId():null)
                 .columnId(task.getColumn().getId())
                 .projectId(task.getColumn().getProject().getId())
                 .name(name)

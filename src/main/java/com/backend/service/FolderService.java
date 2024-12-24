@@ -70,6 +70,7 @@ public class FolderService {
             }
             makeDrive = sftpService.createNewFolder(request.getName(), folderDto.getPath());
 
+
         }else{
             makeDrive = sftpService.createFolder(request.getName(),uid);
 
@@ -195,7 +196,7 @@ public class FolderService {
 
 
     public List<FolderDto> sharedFolder(String uid){
-        List<Folder> folders = folderMogoRepository.findBySharedUsersUid(uid);
+        List<Folder> folders = folderMogoRepository.findBySharedUsersUidAndStatusIsNot(uid,0);
 
         return folders.stream().map(Folder::toDTO).collect(Collectors.toList());
     }
@@ -229,8 +230,12 @@ public class FolderService {
 
 
     public Folder getFolderName(String type,String uid){
-        return folderMogoRepository.findByTypeAndOwnerId(type,uid).orElseThrow(() -> new IllegalArgumentException("Folder not found DRIVE with uid: " + uid));
-
+            Optional<Folder> opt =  folderMogoRepository.findByTypeAndOwnerId(type,uid);
+        if(opt.isPresent()){
+            return opt.get();
+        }else{
+            return null;
+        }
     }
     public Folder existFolder(String name,String parentId){
         return folderMogoRepository.findFolderByNameAndParentIdAndStatusIsNot(name,parentId,0);
@@ -324,6 +329,23 @@ public class FolderService {
         }
 
         sftpService.moveToFolder(draggfolder.getPath(),newPath);
+
+    }
+
+
+    public boolean moveFileToFolder(MoveFolderRequest request){
+        Folder targetFolder = folderMogoRepository.findById(request.getTargetFolderId()).orElseThrow(() -> new RuntimeException("Folder not found with ID: " + request.getTargetFolderId()));
+
+        FileMogo file = fileMogoRepository.findById(request.getFileId()).orElseThrow(() -> new RuntimeException("File not found with ID: " + request.getFileId()));
+
+        String newPath = targetFolder.getPath() + "/"+file.getSavedName();
+        Query query = new Query(Criteria.where("_id").is(file.getId()));
+        Update update = new Update()
+                .set("path",newPath )
+                .set("updateAt",LocalDateTime.now())
+                .set("folderId",targetFolder.getId());
+        mongoTemplate.upsert(query, update, FileMogo.class);
+        return true;
 
     }
 

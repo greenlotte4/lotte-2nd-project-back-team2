@@ -1,6 +1,7 @@
 package com.backend.dto.request.project;
 
 import com.backend.dto.response.project.GetProjectColumnDTO;
+import com.backend.dto.response.project.GetProjectCoworkerDTO;
 import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.project.Project;
 import com.backend.entity.project.ProjectCoworker;
@@ -23,7 +24,7 @@ public class PostProjectDTO {
     private int status; // 0:삭제 1:대기중 2:진행중 3:완료
 
     private List<GetProjectColumnDTO> columns;
-    private List<GetUsersAllDto> coworkers;
+    private List<GetProjectCoworkerDTO> coworkers;
     private List<ProjectCoworker> coworkerEntities;
 
     public Project toProject() {

@@ -70,11 +70,11 @@ public class ProjectService {
 
     public Project createProject(PostProjectDTO postDTO, String username) {
 
-        List<GetUsersAllDto> userList = postDTO.getCoworkers();
+        List<GetProjectCoworkerDTO> userList = postDTO.getCoworkers();
         Project project = projectRepository.save(postDTO.toProject());
         // 공동 작업자 추가
         userList.forEach(u -> project.addCoworker(ProjectCoworker.builder()
-                .user(User.builder().id(u.getId()).build())
+                .user(User.builder().id(u.getUserId()).build())
                 .project(project)
                 .isOwner(false)
                 .build()));
@@ -85,19 +85,20 @@ public class ProjectService {
                 .build());
         // 컬럼 및 태스크 추가
         postDTO.getColumns().forEach(columnDTO -> {
-            ProjectColumn column = columnDTO.toEntity();
-
+            ProjectColumn column = columnRepository.save(columnDTO.toEntity());
+            column.setProject(project);
             log.info(column);
             // 태스크 추가
             columnDTO.getTasks().forEach(taskDTO -> {
-                ProjectTask task = taskDTO.toProjectTask();
-
+                ProjectTask task = taskRepository.save(taskDTO.toProjectTask());
+                task.setColumn(column);
                 log.info(task);
                 // 서브태스크 추가
                 log.info("Subtasks : " + taskDTO.getSubTasks());
                 if (taskDTO.getSubTasks()!=null&&!taskDTO.getSubTasks().isEmpty()) {
                     taskDTO.getSubTasks().forEach(subTaskDTO -> {
-                        task.addSubTask(subTaskDTO.toEntity()); // 서브태스크 추가
+                        ProjectSubTask subTask = subTaskRepository.save(subTaskDTO.toEntity());
+                        task.addSubTask(subTask); // 서브태스크 추가
                         log.info(subTaskDTO);
                     });
                 }
@@ -105,13 +106,14 @@ public class ProjectService {
                 log.info("Comments : " + taskDTO.getComments());
                 if (taskDTO.getComments()!=null&&!taskDTO.getComments().isEmpty()) {
                     taskDTO.getComments().forEach(commentDTO -> {
-                        task.addComment(commentDTO.toEntity()); // 댓글 추가
+                        ProjectComment comment = commentRepository.save(commentDTO.toEntity());
+                        task.addComment(comment); // 댓글 추가
                         log.info(commentDTO);
                     });
                 }
-                if(task!=null) column.addTask(task); // 컬럼에 태스크 추가
+                column.addTask(task); // 컬럼에 태스크 추가
             });
-            if(column!=null)project.addColumn(column); // 프로젝트에 컬럼 추가
+            project.addColumn(column); // 프로젝트에 컬럼 추가
         });
         return projectRepository.saveAndFlush(project);  // 최종적으로 프로젝트를 저장
     }
@@ -149,6 +151,15 @@ public class ProjectService {
         if (optProject.isPresent()) {
             Project project = optProject.get();
             return project.toGetProjectDTO();
+        }
+        return null;
+    }
+    public GetProjectDTO putProject(GetProjectDTO dto) {
+        Optional<Project> optProject = projectRepository.findById(dto.getId());
+        if (optProject.isPresent()) {
+            Project project = optProject.get();
+            project.updateProject(dto);
+            return projectRepository.save(project).toGetProjectDTO();
         }
         return null;
     }

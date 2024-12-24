@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class ShareController {
 
-
+    private final SimpMessagingTemplate messagingTemplate;
     private final ShareService shareService;
 
     @PostMapping("/share/drive/{type}/{id}")

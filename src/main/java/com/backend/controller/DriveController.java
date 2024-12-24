@@ -164,13 +164,28 @@ public class DriveController {
         }
         log.info("Get drive list  uid:"+uid);
         Folder rootFolder = folderService.getFolderName("ROOT",uid);
+        String rootId = null;
         if (rootFolder == null) {
-            return ResponseEntity.ok().body("No folders found.");
+            User user = userService.getUserByuid(uid);
+            NewDriveRequest newDriveRequest = NewDriveRequest.builder()
+                    .type("ROOT")
+                    .description(uid+"의 드라이브")
+                    .driveMaster(uid)
+                    .order(0)
+                    .owner(uid)
+                    .name(user.getName())
+                    .status(1)
+                    .masterEmail(user.getEmail())
+                    .build();
+            rootId = folderService.createRootDrive(newDriveRequest);
+            folderService.insertDriveSetting(user.getUid(),user.getId());
+        }else{
+            rootId = rootFolder.getId();
         }
-        List<FolderDto> folderDtoList =  folderService.getFoldersByUid(uid, rootFolder.getId());
 
-
+        List<FolderDto> folderDtoList =  folderService.getFoldersByUid(uid, rootId);
         List<FolderDto> shareFolderList= folderService.sharedFolder(uid);
+
         log.info("공유된 내용이 없어?",shareFolderList);
 
         FolderResponseDto folderResponseDto  = FolderResponseDto.builder()
@@ -266,16 +281,27 @@ public class DriveController {
 
     }
 
-    //폴더 이름 바꾸기
-    @PutMapping("/folder/{folderId}/move")
-    public ResponseEntity moveFolder(@RequestBody MoveFolderRequest moveFolderRequest, @PathVariable String folderId){
+    //폴더 이동
+    @PutMapping("/move")
+    public ResponseEntity moveFolder(@RequestBody MoveFolderRequest moveFolderRequest){
         log.info("move folder name:"+moveFolderRequest);
         String position = moveFolderRequest.getPosition();
         log.info("position:"+position);
         if(moveFolderRequest.getPosition().equals("inside")){
+            if(moveFolderRequest.getFileId() != null){
+                log.info("fileId:"+moveFolderRequest.getFileId());
+                Boolean result = folderService.moveFileToFolder(moveFolderRequest);
+                if(result){
+                    return ResponseEntity.ok().body("File moved successfully");
+                }else{
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File move failed");
+                }
+            }
             log.info("inside 요청 들어오나???");
             folderService.moveToFolder(moveFolderRequest);
-            return null;
+
+
+            return ResponseEntity.ok().body("Folder updated successfully");
 
         }else{
             double changedOrder =  folderService.updateFolder(moveFolderRequest);
@@ -286,9 +312,6 @@ public class DriveController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Folder update failed");
             }
         }
-
-
-
 
     }
 

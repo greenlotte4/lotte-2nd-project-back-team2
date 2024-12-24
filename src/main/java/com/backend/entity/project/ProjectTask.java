@@ -58,7 +58,7 @@ public class ProjectTask {
     public GetProjectTaskDTO toGetProjectTaskDTO() {
         GetProjectTaskDTO task = GetProjectTaskDTO.builder()
                 .id(id)
-                .ProjectId(column.getProject().getId())
+                .ProjectId(column.getProject()!=null?column.getProject().getId():null)
                 .columnId(column.getId())
                 .title(title)
                 .content(content)

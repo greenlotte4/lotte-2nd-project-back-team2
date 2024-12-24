@@ -35,7 +35,7 @@ public interface FolderMogoRepository extends MongoRepository<Folder, String>   
 
     List<Folder> findBySharedUsersUidAndTarget(String userId,int target);
 
-    List<Folder> findBySharedUsersUid(String uid);
+    List<Folder> findBySharedUsersUidAndStatusIsNot(String uid,int status);
 
     Optional<Folder> findByIdAndSharedUsersUid(String folderId,String uid);
 

@@ -6,14 +6,14 @@ import com.backend.document.drive.Folder;
 import com.backend.document.drive.Invitation;
 import com.backend.document.drive.ShareLink;
 import com.backend.dto.request.drive.*;
+import com.backend.entity.folder.DriveSetting;
 import com.backend.entity.group.GroupMapper;
+import com.backend.entity.user.Alert;
 import com.backend.entity.user.User;
 import com.backend.repository.GroupMapperRepository;
 import com.backend.repository.UserRepository;
-import com.backend.repository.drive.FileMogoRepository;
-import com.backend.repository.drive.FolderMogoRepository;
-import com.backend.repository.drive.InvitationRepository;
-import com.backend.repository.drive.ShareLinkRepository;
+import com.backend.repository.drive.*;
+import com.backend.repository.user.AlertRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -46,6 +47,10 @@ public class ShareService {
     private final EmailService emailService;
     private final ShareLinkRepository shareLinkRepository;
     private final FolderService folderService;
+    private final AlertRepository alertRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final DriveSettingRepository driveSettingRepository;
+
 
     //department
     public boolean shareUser(ShareRequestDto shareRequestDto,String type,String id ) {
@@ -73,17 +78,19 @@ public class ShareService {
                 }
 
                 List<SharedUser> existingSharedUsers = folder.getSharedUsers();
-                Map<Long, SharedUser> userMap = new LinkedHashMap<>();
-                for (SharedUser user : existingSharedUsers) {
-                    userMap.put(user.getId(), user);
-                }
-                for (SharedUser user : savedUser) {
-                    userMap.put(user.getId(), user);
-                }
-                List<SharedUser> finalSharedUsers = new ArrayList<>(userMap.values());
-                folder.setSharedUsers(finalSharedUsers);;
+
+
+
+
+                folder.setSharedUsers(savedUser);;
 
                 folderMogoRepository.save(folder);
+                messageToSharedUser(savedUser,id);
+
+                List<SharedUser> missingUsers = new ArrayList<>(existingSharedUsers);
+                missingUsers.removeAll(savedUser);
+                messageToRemove(missingUsers,id);
+
 
                 return true;
             }else if(type.equals("file")){
@@ -168,6 +175,8 @@ public class ShareService {
 
                 propagatePermissions(folder.getPath(),finalSharedUsers,folder.getSharedDepts(),saveInvitations,1);
 
+                messageToSharedUser(savedUser,id);
+
                 emailService.sendToInvitation(saveInvitations,folder);
 
 
@@ -246,6 +255,8 @@ public class ShareService {
 
             propagatePermissions(folder.getPath(),finalSharedUsers,sharedDeptList,folder.getInvitations(),1);
 
+            messageToSharedUser(sharedUserList,id);
+
             return true;
         }else if(type.equals("file")){
 
@@ -253,8 +264,6 @@ public class ShareService {
         }
 
         return false;
-
-
 
 
 
@@ -295,6 +304,7 @@ public class ShareService {
 
             folderMogoRepository.save(folder);
             propagatePermissions(folder.getPath(),sharedUsers,sharedDepts,folder.getInvitations(),1);
+            messageToSharedUser(sharedUsers,request.getId());
 
             log.info("Departments and related users removed successfully.");
 
@@ -526,5 +536,75 @@ public class ShareService {
 
         }
         return false;
+    }
+
+    public void messageToSharedUser(List<SharedUser> sharedUserList,String id){
+        for(SharedUser sharedUser : sharedUserList){
+            User user = User.builder()
+                    .id(sharedUser.getId())
+                    .uid(sharedUser.getUid())
+                    .build();
+            Optional<DriveSetting> setting = driveSettingRepository.findByUserId(sharedUser.getId());
+            if(setting.isPresent() && !setting.get().isShare_notifications()){
+                messagingTemplate.convertAndSend(
+                        "/topic/folder/updates/"+user.getId(),
+                        id
+                );
+            }else{
+                Alert alert = Alert.builder()
+                        .user(user)
+                        .title("공유")
+                        .type(2)
+                        .status(2)
+                        .createAt(LocalDateTime.now().toString())
+                        .content("드라이브가 공유되었습니다.")
+                        .build();
+
+                Alert savedAlert = alertRepository.save(alert);
+                log.info("공유 메세지 전달!!"+sharedUser.getUid() +"대상 "+id);
+                messagingTemplate.convertAndSend(
+                        "/topic/folder/updates/"+user.getId(),
+                        id
+                );
+                messagingTemplate.convertAndSendToUser(sharedUser.getId().toString(),"/topic/alerts/", savedAlert.toGetAlarmDto());
+
+            }
+
+        }
+    }
+
+    public void messageToRemove(List<SharedUser> sharedUserList,String id){
+        for(SharedUser sharedUser : sharedUserList){
+            User user = User.builder()
+                    .id(sharedUser.getId())
+                    .uid(sharedUser.getUid())
+                    .build();
+            Optional<DriveSetting> setting = driveSettingRepository.findByUserId(sharedUser.getId());
+            if(setting.isPresent() && !setting.get().isShare_notifications()){
+                messagingTemplate.convertAndSend(
+                        "/topic/folder/remove/"+sharedUser.getId(),
+                        id
+                );
+            }else{
+                Alert alert = Alert.builder()
+                        .user(user)
+                        .title("공유 해제")
+                        .type(2)
+                        .status(2)
+                        .createAt(LocalDateTime.now().toString())
+                        .content("드라이브가 공유 해제되었습니다.")
+                        .build();
+
+                Alert savedAlert = alertRepository.save(alert);
+                log.info("공유 메세지 전달!!"+sharedUser.getUid() +"대상 "+id);
+                messagingTemplate.convertAndSend(
+                        "/topic/folder/remove/"+sharedUser.getId(),
+                        id
+                );
+                messagingTemplate.convertAndSendToUser(sharedUser.getId().toString(),"/topic/alerts/", savedAlert.toGetAlarmDto());
+
+            }
+
+        }
     }
 }

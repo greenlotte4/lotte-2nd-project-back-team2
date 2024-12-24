@@ -49,7 +49,11 @@ public class Project { //프로젝트
         coworkers.remove(coworker);
         coworker.setProject(null);
     }
-
+    public void updateProject(GetProjectDTO dto) {
+        this.title = dto.getTitle();
+        this.type = dto.getType();
+        this.status = dto.getStatus();
+    }
     public void addColumn(ProjectColumn column) {
         if(columns == null) {columns = new ArrayList<>();}
         columns.add(column);

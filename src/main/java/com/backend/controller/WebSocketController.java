@@ -18,6 +18,7 @@ import com.backend.dto.response.user.GetUsersAllDto;
 import com.backend.entity.calendar.Calendar;
 import com.backend.entity.calendar.CalendarContent;
 import com.backend.entity.calendar.CalendarMapper;
+import com.backend.entity.user.Alert;
 import com.backend.entity.user.User;
 import com.backend.repository.UserRepository;
 import com.backend.repository.calendar.CalendarContentRepository;
@@ -31,6 +32,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -208,5 +210,8 @@ public class WebSocketController {
         messagingTemplate.convertAndSend("/topic/page/title/"+result, message);
         System.out.println("sadkfljasdkfjllsaf2");
     }
+
+
+
 
 }
