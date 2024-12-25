@@ -46,10 +46,10 @@ public class GetProjectTaskDTO {
                 .subTasks(subTasks.stream().map(GetProjectSubTaskDTO::toEntity).collect(Collectors.toList()))
                 .comments(comments.stream().map(GetProjectCommentDTO::toEntity).collect(Collectors.toList()))
                 .build();
-        if (!assign.isEmpty()) {
-            return this.addAssign(task);
-        } else {
+        if (associate==null) {
             return task;
+        } else {
+            return this.addAssign(task);
         }
     }
     private ProjectTask addAssign(ProjectTask task) {

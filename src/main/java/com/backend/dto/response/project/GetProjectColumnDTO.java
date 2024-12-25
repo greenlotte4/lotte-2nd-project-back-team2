@@ -36,6 +36,7 @@ public class GetProjectColumnDTO {
                 .id(id)
                 .title(title)
                 .color(color)
+                .role(role)
                 .position(position)
                 .tasks(tasks.stream().map(GetProjectTaskDTO::toProjectTask).collect(Collectors.toList()))
                 .build();
