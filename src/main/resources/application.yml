@@ -5,8 +5,7 @@ spring:
         name: back-end
     data:
         redis:
-            host: 13.124.94.213
-            port: 6379
+            url: redis://default:Alcls154*@13.124.94.213:6379
         mongodb:
             uri: mongodb://lotteon:Alcls154*@13.124.94.213:27017/lotteon?authSource=admin
     datasource:

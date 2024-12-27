@@ -790,6 +790,20 @@ public class FolderService {
         String restoredPath = restoreFolder.getPath();
         log.info("복구된 상위 폴더 경로: {}", restoredPath);
 
+        if(restoreFolder.getStatus() != 0 ){
+            // MongoDB 업데이트
+            Query query = new Query(Criteria.where("_id").is(folderId));
+            Update update = new Update()
+                    .set("status", 1)
+                    .set("restore", 0)
+                    .set("target",0)
+                    .set("updatedAt", new Date());
+            mongoTemplate.upsert(query, update, Folder.class);
+
+            updateRestoreAllChildren(folderId);
+            return true;
+        }
+
         // SFTP 복구 호출
         boolean sftpRestoreSuccess = sftpService.restoreMoveFolder(folder.getPath(), restoredPath);
         if (!sftpRestoreSuccess) {

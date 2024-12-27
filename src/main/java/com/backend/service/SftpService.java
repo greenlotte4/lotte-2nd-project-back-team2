@@ -198,7 +198,9 @@ public class SftpService {
     }
 
 
-  //사용자 생성시 root 폴더 생성 (폴더이름 -> username)
+
+
+    //사용자 생성시 root 폴더 생성 (폴더이름 -> username)
     public String createRootFolder(String folderName,String uid) {
 
         String remoteDir = BASE_SFTP_DIR + uid;
