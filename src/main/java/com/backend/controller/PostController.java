@@ -48,7 +48,7 @@ public class PostController {
 
     @PostMapping("/write")
     public ResponseEntity<?> createPost(@ModelAttribute PostDTO postDTO,
-                                        @RequestParam("files") List<MultipartFile> files,
+                                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                                         HttpServletRequest request) {
         log.info("글쓰기 컨트롤러 호출");
 
@@ -82,29 +82,23 @@ public class PostController {
     public ResponseEntity<List<PostDTO>> getView(@RequestParam Long boardId, Authentication authentication, Pageable pageable) {
         // 게시판 존재 여부 확인
         Optional<Board> boardOpt = boardRepository.findById(boardId);
-        log.info("boardOpt: " + boardOpt);
         if (boardOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(null);  // 존재하지 않는 게시판
         }
         Board board = boardOpt.get();
 
+        // 부서별 게시판에 대한 권한 체크 부분 제거
+        // if (board.getBoardType() == 2) {
+        //     String uid = authentication.getName();
+        //     boolean hasAccess = postService.checkBoardAccess(boardId, uid);
+        //     if (!hasAccess) {
+        //         return ResponseEntity.status(403).body(null);  // 권한 없음
+        //     }
+        // }
 
-        PostDTO postDTO = new PostDTO();
-        postDTO.setBoardName(board.getBoardName());
-        String boardName = postDTO.getBoardName();
-
-        if (board.getBoardType() == 2) { // 부서별 게시판
-            String uid = authentication.getName();
-            boolean hasAccess = postService.checkBoardAccess(boardId, uid);  // boardName 추가
-
-            if (!hasAccess) {
-                return ResponseEntity.status(403).body(null);  // 권한 없음
-            }
-        }
         List<PostDTO> posts = postService.getPostsByBoardId(boardId, pageable);
         return ResponseEntity.ok(posts);  // 정상적으로 게시글 반환
     }
-
 
 
     @GetMapping("/view")
@@ -124,12 +118,7 @@ public class PostController {
                 return ResponseEntity.status(404).body("게시물이 존재하지 않습니다.");
             }
 
-            // 권한 체크
-            boolean hasAccess = postService.checkBoardAccess(postDTO.getBoardId(), uid);
-            if (!hasAccess) {
-                log.warn("사용자 권한 없음: 접근 불가");
-                return ResponseEntity.status(403).body("접근 권한이 없습니다.");
-            }
+
 
             // 첨부파일 목록 조회
             List<BoardFile> files = postService.getFilesByPostId(postId);
@@ -177,17 +166,28 @@ public class PostController {
         PostDTO postDTO = postService.getPostById(boardId, postId);
         return ResponseEntity.ok(postDTO);
     }
-
     @PutMapping("/posts/{boardId}/view/{postId}")
     public ResponseEntity<String> updatePost(
             @PathVariable Long boardId,
             @PathVariable Long postId,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @ModelAttribute PostDTO postDTO) {
-        log.info("게시글 수정 요청 - boardId: {}, postId: {}, title: {}", boardId, postId, postDTO.getTitle());
-        postService.updatePost(boardId, postId, postDTO);
-        return ResponseEntity.ok("게시글이 성공적으로 수정되었습니다.");
 
+        log.info("게시글 수정 요청 - boardId: {}, postId: {}, title: {}", boardId, postId, postDTO.getTitle());
+
+        try {
+            // 파일 처리 로직 추가
+            postService.updatePost(boardId, postId, postDTO, files);  // 서비스로 파일과 DTO를 전달
+
+            return ResponseEntity.ok("게시글이 성공적으로 수정되었습니다.");
+        } catch (Exception e) {
+            log.error("게시글 수정 중 오류 발생: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("게시글 수정 실패");
+        }
     }
+
+
+
 
 
     @DeleteMapping("/posts/{boardId}/view/{postId}")

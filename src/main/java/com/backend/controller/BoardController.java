@@ -41,16 +41,21 @@ public class BoardController {
 
     @GetMapping("/boards/group/{groupId}")
     public ResponseEntity<List<Board>> getBoardsByGroup(@PathVariable Long groupId) {
-        List<Board> boards = boardService.getBoardsByGroup(groupId);
+        // boardType이 2이고, group_id가 설정된 게시판만 가져옴
+        List<Board> boards = boardService.getBoardsByGroup( groupId);
         return ResponseEntity.ok(boards);
     }
 
-    // 게시판 생성
     @PostMapping("/boards")
     public ResponseEntity<Board> createBoard(@RequestBody Board board) {
-        Board newBoard = boardService.createBoard(board);
-        return ResponseEntity.ok(newBoard);
+        try {
+            Board newBoard = boardService.createBoard(board);
+            return ResponseEntity.ok(newBoard);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
+
 
     //2024/12/20 박연화 추가
     @GetMapping("/board/notice")
