@@ -273,12 +273,12 @@ public class PostService {
     }
 
     @Transactional
-    public void updatePost(Long boardId, Long postId, PostDTO postUpdateDTO) {
+    public void updatePost(Long boardId, Long postId, PostDTO postUpdateDTO, List<MultipartFile> files) {
         // 게시글 조회
         Post post = postRepository.findByBoard_BoardIdAndPostId(boardId, postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
 
-        // 제목과 내용 업데이트
+        // 기본 정보 업데이트
         post.setTitle(postUpdateDTO.getTitle());
         post.setContent(postUpdateDTO.getContent());
 
@@ -287,31 +287,87 @@ public class PostService {
             Board newBoard = boardRepository.findById(postUpdateDTO.getBoardId())
                     .orElseThrow(() -> new IllegalArgumentException("해당 게시판이 존재하지 않습니다."));
             post.setBoard(newBoard);
-            log.info("게시판이 변경되었습니다: {} -> {}", boardId, postUpdateDTO.getBoardId());
         }
 
-        // 파일이 존재할 경우 파일 처리
-        List<MultipartFile> file = postUpdateDTO.getFiles();
-        log.info("file!!"+file.get(0).getOriginalFilename());
-//        if (file != null && !file.isEmpty()) {
-//            try {
-//                String fileName = file.getOriginalFilename();
-//                post.setFileName(fileName);
-//                log.info("파일이 업데이트되었습니다: {}", fileName);
-//
-//                // 실제 파일 저장 로직은 필요에 따라 구현 (예: 파일 시스템, 클라우드 스토리지 등)
-//            } catch (Exception e) {
-//                log.error("파일 업로드 중 오류 발생:", e);
-//                throw new RuntimeException("파일 업로드 실패", e);
-//            }
-//        }
+        // 파일 업로드 처리
+        if (files != null && !files.isEmpty()) {
+            // 업로드 파일 개수 제한 검사
+            if (files.size() > 2) {
+                throw new IllegalArgumentException("파일은 최대 2개까지만 업로드할 수 있습니다.");
+            }
 
-        // 수정된 게시글 저장
+            String uid = postUpdateDTO.getUid();
+            String remoteDir = "uploads/board/" + uid; // 사용자별 디렉토리
+
+            // 기존 파일 삭제
+            List<BoardFile> existingFiles = boardFileRepository.findByPostId(postId);
+            for (BoardFile existingFile : existingFiles) {
+                try {
+                    // SFTP에서 파일 삭제
+                    sftpService.delete(existingFile.getPath());
+                    // MongoDB에서 파일 메타데이터 삭제
+                    boardFileRepository.delete(existingFile);
+                } catch (Exception e) {
+                    log.error("기존 파일 삭제 중 오류 발생: {}", e.getMessage());
+                }
+            }
+
+            // 새 파일 업로드
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    String originalFilename = file.getOriginalFilename();
+                    String savedFilename = folderService.generateSavedName(originalFilename);
+                    String remoteFilePath = remoteDir + "/" + savedFilename;
+
+                    File tempFile = null;
+                    try {
+                        tempFile = File.createTempFile("upload_", "_" + originalFilename);
+                        file.transferTo(tempFile);
+
+                        // SFTP 파일 업로드
+                        String uploadedPath = sftpService.uploadFile(
+                                tempFile.getAbsolutePath(),
+                                remoteDir,
+                                savedFilename
+                        );
+
+                        log.info("파일 업로드 경로: {}", uploadedPath);
+
+                        // MongoDB에 파일 메타데이터 저장
+                        BoardFile boardFile = BoardFile.builder()
+                                .postId(postId)
+                                .originalName(originalFilename)
+                                .savedName(savedFilename)
+                                .path(remoteDir + "/" + savedFilename)
+                                .ownerUid(uid)
+                                .size(file.getSize())
+                                .createdAt(LocalDateTime.now())
+                                .build();
+
+                        boardFileRepository.save(boardFile);
+
+                    } catch (IOException e) {
+                        log.error("파일 업로드 중 오류 발생: {}", e.getMessage());
+                        throw new RuntimeException("파일 업로드 실패", e);
+                    } finally {
+                        if (tempFile != null && tempFile.exists()) {
+                            if (tempFile.delete()) {
+                                log.info("임시 파일 삭제 성공: {}", tempFile.getAbsolutePath());
+                            } else {
+                                log.warn("임시 파일 삭제 실패: {}", tempFile.getAbsolutePath());
+                            }
+                        }
+                    }
+                }
+            }
+
+            post.setFileCount(files.size());
+        }
+
+        // 게시글 저장
         postRepository.save(post);
-        log.info("게시글이 수정되었습니다: postId = {}", postId);
+        log.info("게시글 수정 완료 - postId: {}", postId);
     }
-
-
     @Transactional
     public void deletePost(Long boardId, Long postId) {
         Post post = postRepository.findByBoard_BoardIdAndPostId(boardId, postId)
